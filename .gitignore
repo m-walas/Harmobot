@@ -1,4 +1,4 @@
-__pycache__/
+*/__pycache__/
 *.py[cod]
 *$py.class
 
@@ -43,6 +43,7 @@ harmobot reklama/
 # Pliki PyInstaller
 *.manifest
 *.spec
+build/
 
 # Testy i raporty pokrycia
 htmlcov/
