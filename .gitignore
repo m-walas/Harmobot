@@ -1,0 +1,65 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# Visual Studio Code settings folder
+.vscode/
+
+# Backup/wersje robocze, buildy, materiały marketingowe
+ver*/
+HarmoBot builds/
+harmobot reklama/
+
+# Pliki PyInstaller
+*.manifest
+*.spec
+
+# Testy i raporty pokrycia
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# Systemowe pliki
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
