@@ -17,7 +17,6 @@ def load_from_csv(main_window):
             reader = csv.reader(f, delimiter=';')
             header = next(reader, None)
             if not header or len(header) < 4:
-                main_window.show_notification("Nieprawidłowy nagłówek CSV.", duration=3000, error=True)
                 return
 
             for row in reader:
@@ -58,10 +57,9 @@ def load_from_csv(main_window):
         )
         main_window.schedule_widget.setMaxHours(float(main_window.max_hours_spin.value()))
         main_window.update_summary()
-        main_window.show_notification(f"Wczytano CSV z pliku: {filepath}", duration=3000)
 
     except Exception as e:
-        main_window.show_notification(f"Błąd wczytywania CSV: {str(e)}", duration=3000, error=True)
+        return
 
 
 def export_to_csv(main_window):
@@ -83,9 +81,8 @@ def export_to_csv(main_window):
                 assigned = row['Assigned To']
                 writer.writerow([dt_str, st_str, en_str, assigned])
 
-        main_window.show_notification(f"Zapisano plik: {filepath}", duration=3000)
     except Exception as e:
-        main_window.show_notification(f"Błąd eksportu CSV: {str(e)}", duration=3000, error=True)
+        return
 
 
 def export_to_png(main_window):
@@ -96,9 +93,8 @@ def export_to_png(main_window):
     try:
         pixmap = main_window.schedule_widget.grab()
         pixmap.save(filepath, "PNG")
-        main_window.show_notification(f"Zapisano plik: {filepath}", duration=3000)
     except Exception as e:
-        main_window.show_notification(f"Błąd eksportu PNG: {str(e)}", duration=3000, error=True)
+        return
 
 
 def export_to_html(main_window):
@@ -136,6 +132,5 @@ def export_to_html(main_window):
         with open(filepath, "w", encoding="utf-8") as f:
             f.write("\n".join(lines))
 
-        main_window.show_notification(f"Zapisano plik: {filepath}", duration=3000)
     except Exception as e:
-        main_window.show_notification(f"Błąd eksportu HTML: {str(e)}", duration=3000, error=True)
+        return

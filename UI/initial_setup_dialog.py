@@ -1,374 +1,340 @@
-from PyQt6.QtWidgets import (
-    QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton,
-    QFileDialog, QHBoxLayout, QSpacerItem, QSizePolicy, QWidget
-)
-from PyQt6.QtGui import QPixmap, QMovie, QCursor, QFont
-from PyQt6.QtCore import Qt, QSize
-
-from datetime import datetime
 import sys
 import os
 
-from core.lettuce_service import fetch_event_data, process_data
-from core.scheduler import build_day_slots
-from core.version import __app_version__
+from PyQt6.QtWidgets import (
+    QDialog, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QLineEdit, QPushButton,
+    QMessageBox, QFileDialog, QVBoxLayout
+)
+from PyQt6.QtGui import QMovie, QPixmap, QDesktopServices
+from PyQt6.QtCore import Qt, QUrl
 
+from UI.collapsible_sidebar import CollapsibleSidebar
+from UI.footer import FooterWidget
 from UI.styles import LIGHT_QSS, FIRE_QSS
 
+from core.lettuce_service import fetch_event_data as lettuce_fetch_event_data
+from core.lettuce_service import process_data as lettuce_process_data
+from core.schej_service import fetch_event_data as schej_fetch_event_data
+from core.schej_service import process_data as schej_process_data
+from core.update_checker import get_update_checker
+from core.version import __app_version__
 
 class InitialSetupDialog(QDialog):
-    """
-    Dialog startowy dla aplikacji HarmoBot.
-    Pozwala wprowadzić Event ID (i pobrać dane),
-    wczytać harmonogram z pliku CSV oraz włączyć tryb FireMode.
-    
-    Po załadowaniu danych ustawia atrybuty loaded_* i wywołuje accept().
-    """
-
-    def resource_path(self, relative_path):
-        """
-        Zwraca ścieżkę absolutną do zasobu (np. pliku graficznego).
-        Obsługuje zarówno środowisko developerskie, jak i PyInstaller.
-        
-        Parametr:
-            relative_path (str): ścieżka względna do zasobu
-
-        Zwraca:
-            str: ścieżka absolutna w systemie plików
-        """
-        try:
-            base_path = sys._MEIPASS  # PyInstaller
-        except Exception:
-            base_path = os.path.abspath(".")
-        return os.path.join(base_path, relative_path)
-
     def __init__(self, parent=None):
-        """
-        Inicjalizuje dialog, ustawia layout, logo, pola tekstowe, przyciski
-        i stopkę z informacjami.
-        """
         super().__init__(parent)
-        self.setWindowTitle("HarmoBot")
+        self.setWindowTitle("Harmobot")
         self.setModal(True)
-        self.resize(600, 500)
+        self.resize(900, 600)
 
+        # Domyślnie Lettuce
+        self.current_engine = "Lettuce"
         self.fire_mode = False
 
-        main_layout = QVBoxLayout()
-        main_layout.setSpacing(20)
-        main_layout.setContentsMargins(40, 40, 40, 20)
+        # Dane do przekazania do MainWindow
+        self.loaded_engine = "Lettuce"
+        self.loaded_participants = []
+        self.loaded_poll_dates = []
+        self.loaded_day_ranges = None
 
-        # Logo
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+
+        # Górny widget: sidebar + centrum
+        top_widget = QWidget()
+        top_layout = QHBoxLayout(top_widget)
+        top_layout.setContentsMargins(0, 0, 0, 0)
+        top_layout.setSpacing(0)
+
+        # Sidebar
+        self.sidebar = CollapsibleSidebar(initial_mode=True)
+        self.sidebar.sig_select_lettuce.connect(self.on_select_lettuce)
+        self.sidebar.sig_select_schej.connect(self.on_select_schej)
+        self.sidebar.sig_load_csv.connect(self.on_load_csv)
+        self.sidebar.sig_fire_mode.connect(self.on_toggle_fire_mode)
+        self.sidebar.sig_documentation.connect(self.on_show_doc)
+        top_layout.addWidget(self.sidebar, stretch=0)
+
+        # Central – główna część dialogu
+        center_widget = QWidget()
+        self.center_layout = QVBoxLayout(center_widget)
+        self.center_layout.setContentsMargins(20, 20, 10, 10)
+        self.center_layout.setSpacing(10)
+
+        # main logo
         self.logo_label = QLabel()
         self.default_pixmap = QPixmap(self.resource_path("assets/harmobot_logo_big.png"))
         self.fire_pixmap = QMovie(self.resource_path("assets/harmobot_fire.gif"))
         if self.default_pixmap.isNull():
-            self.logo_label.setText("Logo Here")
+            self.logo_label.setText("Harmobot logo")
             self.logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         else:
+            self.default_pixmap.setDevicePixelRatio(2.0)
             self.logo_label.setPixmap(
                 self.default_pixmap.scaled(
-                    250, 250,
+                    500, 500,
                     Qt.AspectRatioMode.KeepAspectRatio,
                     Qt.TransformationMode.SmoothTransformation
                 )
             )
             self.logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        main_layout.addWidget(self.logo_label, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.center_layout.addWidget(self.logo_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        main_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
+        # spacer widget
+        self.spacer_widget = QWidget()
+        # important: the same values as in function below (update_spacer) -> change in both places
+        initial_space = 158 if self.fire_mode else 5
+        self.spacer_widget.setFixedHeight(initial_space)
+        self.center_layout.addWidget(self.spacer_widget)
 
-        # Sekcja wprowadzania Event ID
-        event_section = QWidget()
-        event_layout = QVBoxLayout()
-        event_layout.setSpacing(15)
-
-        event_id_layout = QHBoxLayout()
-        event_id_label = QLabel("Event ID:")
-        event_id_label.setFont(QFont("Segoe UI", 10))
+        self.event_id_label = QLabel("URL lub Event ID (Lettuce):")
+        self.event_id_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.center_layout.addWidget(self.event_id_label)
 
         self.event_id_edit = QLineEdit()
-        self.event_id_edit.setPlaceholderText("Wprowadź Event ID")
+        self.event_id_edit.setPlaceholderText("https://lettucemeet.com/l/*****")
+        self.event_id_edit.setMinimumWidth(400)
         self.event_id_edit.textChanged.connect(self.toggle_fetch_button)
-
-        event_id_layout.addWidget(event_id_label)
-        event_id_layout.addWidget(self.event_id_edit)
-        event_layout.addLayout(event_id_layout)
+        self.center_layout.addWidget(self.event_id_edit, alignment=Qt.AlignmentFlag.AlignCenter)
 
         self.fetch_button = QPushButton("Pobierz dane")
-        self.fetch_button.setFixedHeight(35)
+        self.fetch_button.setFixedWidth(120)
         self.fetch_button.setEnabled(False)
-        self.fetch_button.setFont(QFont("Segoe UI", 10))
-        fetch_icon_path = "assets/icons/download.png"
-        fetch_icon = QPixmap(fetch_icon_path)
-        if not fetch_icon.isNull():
-            self.fetch_button.setIcon(
-                fetch_icon.scaled(
-                    20, 20,
-                    Qt.AspectRatioMode.KeepAspectRatio,
-                    Qt.TransformationMode.SmoothTransformation
-                )
-            )
-            self.fetch_button.setIconSize(QSize(20, 20))
         self.fetch_button.clicked.connect(self.on_fetch_data)
-        event_layout.addWidget(self.fetch_button)
+        self.center_layout.addWidget(self.fetch_button, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        event_section.setLayout(event_layout)
-        main_layout.addWidget(event_section, alignment=Qt.AlignmentFlag.AlignCenter)
-
-        main_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
-
-        # Etykieta błędów
         self.error_label = QLabel("")
         self.error_label.setStyleSheet("color: red; font-size: 10px;")
         self.error_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        main_layout.addWidget(self.error_label)
+        self.center_layout.addWidget(self.error_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        main_layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
+        self.center_layout.addStretch()
+        top_layout.addWidget(center_widget, stretch=1)
+        main_layout.addWidget(top_widget, stretch=1)
 
-        # Separator
-        separator = QLabel()
-        separator.setFixedHeight(1)
-        separator.setStyleSheet("background-color: #E0E0E0; border: none;")
-        main_layout.addWidget(separator)
+        # "Working with" & logo
+        row_widget = QWidget()
+        row_layout = QHBoxLayout(row_widget)
+        row_layout.setContentsMargins(0, 0, 0, 0)
+        row_layout.setSpacing(6)
+        row_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        main_layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
+        self.working_with_label = QLabel("<i>Working with</i>")
+        row_layout.addWidget(self.working_with_label)
 
-        # Stopka (FireMode, CSV, prawa autorskie)
-        footer_layout = QHBoxLayout()
-        footer_layout.setContentsMargins(0, 0, 0, 0)
-        footer_layout.setSpacing(20)
+        self.engine_logo_label = QLabel()
+        self.engine_logo_label.setCursor(Qt.CursorShape.PointingHandCursor)
+        row_layout.addWidget(self.engine_logo_label)
 
-        self.fire_mode_button = QPushButton("FireMode")
-        self.fire_mode_button.setToolTip("Tylko dla prawdziwych samorządowiczów")
-        self.fire_mode_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.fire_mode_button.setFixedSize(QSize(100, 35))
-        self.fire_mode_button.setFont(QFont("Segoe UI", 9))
+        self.center_layout.addStretch()
+        self.center_layout.addWidget(row_widget, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.engine_logo_label.mousePressEvent = self.on_engine_logo_clicked
 
-        fire_mode_icon_path = "assets/icons/firemode.png"
-        fire_mode_icon = QPixmap(fire_mode_icon_path)
-        if not fire_mode_icon.isNull():
-            self.fire_mode_button.setIcon(
-                fire_mode_icon.scaled(
-                    20, 20,
-                    Qt.AspectRatioMode.KeepAspectRatio,
-                    Qt.TransformationMode.SmoothTransformation
-                )
-            )
-            self.fire_mode_button.setIconSize(QSize(20, 20))
-        self.fire_mode_button.clicked.connect(self.toggle_fire_mode)
-        footer_layout.addWidget(self.fire_mode_button, alignment=Qt.AlignmentFlag.AlignLeft)
+        # footer
+        self.footer = FooterWidget()
+        main_layout.addWidget(self.footer, stretch=0)
 
-        self.load_csv_button = QPushButton("Wczytaj CSV")
-        self.load_csv_button.setToolTip("Dodaj istniejący harmonogram z pliku CSV")
-        self.load_csv_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.load_csv_button.setFixedSize(QSize(120, 35))
-        self.load_csv_button.setFont(QFont("Segoe UI", 9))
+        self.update_checker = get_update_checker(self)
+        self.update_checker.updateAvailable.connect(self.on_update_available)
+        self.update_checker.noUpdateAvailable.connect(self.on_no_update)
+        self.update_checker.errorOccurred.connect(self.on_update_error)
+        self.update_checker.check_for_update()
 
-        csv_icon_path = "assets/icons/csv.png"
-        csv_icon = QPixmap(csv_icon_path)
-        if not csv_icon.isNull():
-            self.load_csv_button.setIcon(
-                csv_icon.scaled(
-                    20, 20,
-                    Qt.AspectRatioMode.KeepAspectRatio,
-                    Qt.TransformationMode.SmoothTransformation
-                )
-            )
-            self.load_csv_button.setIconSize(QSize(20, 20))
-        self.load_csv_button.clicked.connect(self.on_load_csv)
-        footer_layout.addWidget(self.load_csv_button, alignment=Qt.AlignmentFlag.AlignLeft)
+        self.apply_light_theme()
 
-        footer_layout.addSpacerItem(QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
+        self.on_select_lettuce()
 
-        copyright_label = QLabel(f"© 2025 mwalas | v{__app_version__}")
-        copyright_label.setStyleSheet("font-size: 9px; color: #666666;")
-        footer_layout.addWidget(
-            copyright_label,
-            alignment=Qt.AlignmentFlag.AlignRight
-        )
-
-        main_layout.addLayout(footer_layout)
-        self.setLayout(main_layout)
-
-        # Pola do przechowania załadowanych danych
-        self.loaded_schedule_data = None
-        self.loaded_participants = None
-        self.loaded_poll_dates = None
-        self.loaded_time_slot_list = None
-        self.loaded_day_slots_dict = None
-        self.loaded_full_slots = None
-
-    def toggle_fire_mode(self):
-        """
-        Przełącza styl okna (FireMode) i zmienia wyświetlane logo
-        (statyczne -> animowane) w zależności od stanu self.fire_mode.
-        """
-        if not self.fire_mode:
-            self.fire_mode = True
-            self.setStyleSheet(FIRE_QSS)
-
-            if not self.fire_pixmap.isValid():
-                self.show_error("Nie można załadować animowanego logo FireMode.")
-                return
-            self.logo_label.clear()
-            self.logo_label.setMovie(self.fire_pixmap)
-            self.fire_pixmap.start()
+    def on_engine_logo_clicked(self, event):
+        """Kliknięcie w logo otwiera stronę właściwą dla wybranego "silnika"."""
+        if self.current_engine == "Lettuce":
+            QDesktopServices.openUrl(QUrl("https://lettucemeet.com"))
+        elif self.current_engine == "Schej":
+            QDesktopServices.openUrl(QUrl("https://schej.it"))
         else:
-            self.fire_mode = False
-            self.setStyleSheet(LIGHT_QSS)
+            pass
 
-            if self.fire_pixmap.isValid():
-                self.fire_pixmap.stop()
-            self.logo_label.setMovie(None)
-            self.logo_label.setPixmap(
-                self.default_pixmap.scaled(
-                    250, 250,
-                    Qt.AspectRatioMode.KeepAspectRatio,
-                    Qt.TransformationMode.SmoothTransformation
-                )
+    def on_select_lettuce(self):
+        self.current_engine = "Lettuce"
+        self.error_label.setText("")
+        self.event_id_label.setText("URL lub Event ID (Lettuce):")
+        self.event_id_edit.setPlaceholderText("https://lettucemeet.com/l/*****")
+        self.event_id_edit.clear()
+
+        if self.fire_mode:
+            logo_path = "assets/api/lettuce_logo_dark.png"
+        else:
+            logo_path = "assets/api/lettuce_logo_light.png"
+        pixmap = QPixmap(self.resource_path(logo_path))
+        if not pixmap.isNull():
+            pixmap.setDevicePixelRatio(2.0)
+            pixmap = pixmap.scaledToHeight(32, Qt.TransformationMode.SmoothTransformation)
+            self.engine_logo_label.setPixmap(pixmap)
+            self.engine_logo_label.setText("")
+        else:
+            if self.fire_mode:
+                meet_color = "#eef6ed"
+            else:
+                meet_color = "#000000"
+            fallback_html = (
+                f'<span style="color:#009d50; font-weight:bold;">lettuce</span> '
+                f'<span style="color:{meet_color}; font-weight:light;">meet</span>'
             )
+            self.engine_logo_label.setText(fallback_html)
+
+    def on_select_schej(self):
+        self.current_engine = "Schej"
+        self.error_label.setText("")
+        self.event_id_label.setText("URL lub Event ID (Schej):")
+        self.event_id_edit.setPlaceholderText("https://schej.it/e/*****")
+        self.event_id_edit.clear()
+
+        if self.fire_mode:
+            logo_path = "assets/api/schej_logo_dark.png"
+        else:
+            logo_path = "assets/api/schej_logo_light.png"
+        pixmap = QPixmap(self.resource_path(logo_path))
+        if not pixmap.isNull():
+            pixmap.setDevicePixelRatio(2.0)
+            pixmap = pixmap.scaledToHeight(32, Qt.TransformationMode.SmoothTransformation)
+            self.engine_logo_label.setPixmap(pixmap)
+            self.engine_logo_label.setText("")
+        else:
+            fallback_html = '<span style="color:#009d50; font-weight:bold;">schej</span>'
+            self.engine_logo_label.setText(fallback_html)
+
+    def update_engine_logo(self):
+        if self.current_engine == "Lettuce":
+            self.on_select_lettuce()
+        elif self.current_engine == "Schej":
+            self.on_select_schej()
+        else:
+            pass
 
     def toggle_fetch_button(self, text: str):
         self.fetch_button.setEnabled(bool(text.strip()))
 
     def on_fetch_data(self):
-        """
-        Pobiera dane eventu z zewn. źródła i tworzy sloty czasowe.
-        Uzupełnia wewnętrzne atrybuty loaded_* i wywołuje accept().
-        """
-        event_id = self.event_id_edit.text().strip()
-        token = ""
-        offset_hours = 0
-
-        if not event_id:
-            self.show_error("Proszę wpisać Event ID.")
+        raw_input = self.event_id_edit.text().strip()
+        if not raw_input:
+            self.show_error("Proszę wpisać Event ID lub link.")
             return
 
+        self.error_label.setText("")
         try:
-            json_resp = fetch_event_data(event_id, token)
-            participants, dates = process_data(json_resp, offset_hours)
-            if not participants:
-                self.show_error("Brak uczestników w danych.")
-                return
-
-            shift_duration = 30
-            day_slots_dict, full_slots = build_day_slots(participants, dates, shift_duration)
-            schedule_data = []
-            for (start_dt, end_dt) in full_slots:
-                schedule_data.append({
-                    'Shift Start': start_dt,
-                    'Shift End': end_dt,
-                    'Assigned To': ""
-                })
-
-            self.loaded_schedule_data = schedule_data
-            self.loaded_participants = participants
-            self.loaded_poll_dates = dates
-            self.loaded_time_slot_list = self._build_time_slot_list(full_slots, shift_duration)
-            self.loaded_day_slots_dict = day_slots_dict
-            self.loaded_full_slots = full_slots
-
+            if self.current_engine == "Lettuce":
+                event_id = self.parse_lettuce_id(raw_input)
+                json_resp = lettuce_fetch_event_data(event_id)
+                participants, dates = lettuce_process_data(json_resp, time_offset_hours=0)
+                self.loaded_engine = "Lettuce"
+                self.loaded_participants = participants
+                self.loaded_poll_dates = dates
+                self.loaded_day_ranges = None
+            else:
+                event_id = self.parse_schej_id(raw_input)
+                json_resp = schej_fetch_event_data(event_id)
+                participants, dates, day_ranges = schej_process_data(json_resp, time_offset_hours=1)
+                self.loaded_engine = "Schej"
+                self.loaded_participants = participants
+                self.loaded_poll_dates = dates
+                self.loaded_day_ranges = day_ranges
             self.accept()
-
         except Exception as e:
             self.show_error(str(e))
 
-    def on_load_csv(self):
-        """
-        Wczytuje dane harmonogramu z pliku CSV w formacie:
-        Data;Start;Koniec;Osoby
-        Zapisuje je w polach loaded_* i wywołuje accept() po pomyślnym odczycie.
-        """
-        filepath, _ = QFileDialog.getOpenFileName(self, "Wczytaj CSV", "", "CSV Files (*.csv)")
-        if not filepath:
-            return
+    def parse_lettuce_id(self, raw_input: str) -> str:
+        if "schej.it" in raw_input.lower():
+            raise ValueError("Wygląda na link do Schej, a aktualnie jest Lettuce.")
+        if "lettucemeet.com" in raw_input.lower():
+            parts = raw_input.rstrip("/").split("/")
+            if parts:
+                return parts[-1]
+        return raw_input
 
-        try:
-            import csv
-            schedule_data = []
-            days_set = set()
-            times_set = set()
-
-            with open(filepath, "r", newline='', encoding="utf-8") as f:
-                reader = csv.reader(f, delimiter=';')
-                header = next(reader, None)
-                if not header or len(header) < 4:
-                    self.show_error("Nieprawidłowy nagłówek CSV.")
-                    return
-
-                for row in reader:
-                    if len(row) < 4:
-                        continue
-                    day_str = row[0].strip()
-                    start_str = row[1].strip()
-                    end_str = row[2].strip()
-                    assigned_str = row[3].strip()
-
-                    try:
-                        y, m, d = map(int, day_str.split('-'))
-                        sh, sm = map(int, start_str.split(':'))
-                        eh, em = map(int, end_str.split(':'))
-                        sdt = datetime(y, m, d, sh, sm)
-                        edt = datetime(y, m, d, eh, em)
-                    except:
-                        continue
-
-                    schedule_data.append({
-                        'Shift Start': sdt,
-                        'Shift End': edt,
-                        'Assigned To': assigned_str
-                    })
-                    days_set.add(day_str)
-                    times_set.add((start_str, end_str))
-
-            participants = set()
-            for item in schedule_data:
-                assigned = item['Assigned To']
-                names = [n.strip() for n in assigned.split(',') if n.strip()]
-                for name in names:
-                    participants.add(name)
-
-            participants = [{'name': name, 'availabilities': []} for name in sorted(participants)]
-            poll_dates = sorted(days_set)
-
-            full_slots = sorted(
-                [(item['Shift Start'], item['Shift End']) for item in schedule_data],
-                key=lambda x: x[0]
-            )
-
-            shift_duration = 30
-            time_slot_list = self._build_time_slot_list(full_slots, shift_duration)
-            day_slots_dict, built_full_slots = build_day_slots(participants, poll_dates, shift_duration)
-
-            self.loaded_schedule_data = schedule_data
-            self.loaded_participants = participants
-            self.loaded_poll_dates = poll_dates
-            self.loaded_time_slot_list = time_slot_list
-            self.loaded_day_slots_dict = day_slots_dict
-            self.loaded_full_slots = built_full_slots
-
-            self.accept()
-
-        except Exception as e:
-            self.show_error(str(e))
+    def parse_schej_id(self, raw_input: str) -> str:
+        if "lettucemeet.com" in raw_input.lower():
+            raise ValueError("Wygląda na link do Lettuce, a aktualnie jest Schej.")
+        if "schej.it" in raw_input.lower():
+            parts = raw_input.rstrip("/").split("/")
+            if parts:
+                return parts[-1]
+        return raw_input
 
     def show_error(self, message: str):
         self.error_label.setText(message)
 
-    def _build_time_slot_list(self, full_slots, shift_duration):
-        """
-        Tworzy listę krotek (start_time, end_time) na podstawie
-        listy slotów (start_datetime, end_datetime).
-        
-        Parametry:
-            - full_slots: lista par (datetime, datetime)
-            - shift_duration: długość slotu w minutach
-        
-        Zwraca:
-            list[tuple(time, time)]
-        """
-        if not full_slots:
-            return []
-        times = sorted(set((slot[0].time(), slot[1].time()) for slot in full_slots))
-        return list(times)
+    def on_load_csv(self):
+        filepath, _ = QFileDialog.getOpenFileName(self, "Wczytaj CSV", "", "CSV Files (*.csv)")
+        if not filepath:
+            return
+        QMessageBox.information(self, "CSV", f"Załadowano CSV:\n{filepath}")
+
+    def on_toggle_fire_mode(self):
+        self.fire_mode = not self.fire_mode
+        if self.fire_mode:
+            self.apply_fire_mode_theme()
+            if self.fire_pixmap.isValid():
+                self.logo_label.clear()
+                self.logo_label.setMovie(self.fire_pixmap)
+                self.fire_pixmap.start()
+        else:
+            self.apply_light_theme()
+            if self.fire_pixmap.isValid():
+                self.fire_pixmap.stop()
+            if not self.default_pixmap.isNull():
+                self.logo_label.setMovie(None)
+                self.logo_label.setPixmap(
+                    self.default_pixmap.scaled(
+                        500, 500,
+                        Qt.AspectRatioMode.KeepAspectRatio,
+                        Qt.TransformationMode.SmoothTransformation
+                    )
+                )
+
+    def on_show_doc(self):
+        msg = QMessageBox.question(
+            self,
+            "Otwieranie dokumentacji",
+            "Aplikacja otworzy link GitHub w przeglądarce.\n\nCzy kontynuować?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        if msg == QMessageBox.StandardButton.Yes:
+            QDesktopServices.openUrl(QUrl("https://github.com/m-walas/harmobot"))
+
+    def on_update_available(self, remote_version: str):
+        self.footer.setUpdateAvailable(True)
+        QMessageBox.information(
+            self,
+            "Aktualizacja dostępna",
+            f"Nowa wersja {remote_version} jest dostępna!"
+        )
+
+    def on_no_update(self):
+        self.footer.setUpdateAvailable(False)
+
+    def on_update_error(self, error_msg: str):
+        QMessageBox.warning(self, "Update check error", error_msg)
+        self.footer.setUpdateAvailable(False)
+
+    def update_spacer(self):
+        # important: the same values as in function above (InitialSetupDialog.__init__) -> change in both places
+        new_space = 158 if self.fire_mode else 5
+        self.spacer_widget.setFixedHeight(new_space)
+
+    def apply_light_theme(self):
+        self.setStyleSheet(LIGHT_QSS)
+        self.sidebar.set_dark_mode_icon(dark=False)
+        self.update_engine_logo()
+        self.update_spacer()
+
+    def apply_fire_mode_theme(self):
+        self.setStyleSheet(FIRE_QSS)
+        self.sidebar.set_dark_mode_icon(dark=True)
+        self.update_engine_logo()
+        self.update_spacer()
+
+    def resource_path(self, relative_path):
+        try:
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = os.path.abspath(".")
+        return os.path.join(base_path, relative_path)

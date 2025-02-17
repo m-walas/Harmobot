@@ -213,8 +213,8 @@ class ScheduleMatrixWidget(QTableWidget):
     # ------------------- _refresh_cell_background (highlight) -------------------
     def _refresh_cell_background(self, row, col):
         """
-        Ustawia zielonkawe tło w komórce, jeśli highlight_availability
-        jest włączone i dany slot overlap z highlight_person.
+        Ustawia tło w komórce, gdy jest highlight_availability włączony
+        (self.current_highlight_person).
         """
         cell_w = self.cellWidget(row, col)
         if not cell_w:
@@ -229,6 +229,7 @@ class ScheduleMatrixWidget(QTableWidget):
         if not person:
             return
 
+        # Slot start/end
         availability = person['availabilities']
         d_str = self.date_list[col]
         y, m, d = map(int, d_str.split('-'))
@@ -236,7 +237,16 @@ class ScheduleMatrixWidget(QTableWidget):
         sdt = datetime(y, m, d, t1.hour, t1.minute, 0)
         edt = datetime(y, m, d, t2.hour, t2.minute, 0)
 
-        if any(sdt >= avs and edt <= ave for (avs, ave) in availability):
+        # Czy slot jest w ifNeeded?
+        ifneeded_overlap = any(sdt >= ivs and edt <= ive for (ivs, ive) in person['ifNeeded'])
+        # Czy slot jest w normal availability?
+        normal_overlap = any(sdt >= avs and edt <= ave for (avs, ave) in person['availabilities'])
+
+        if ifneeded_overlap and not normal_overlap:
+            # Tylko w ifNeeded -> "mleczny żółty"
+            cell_w.setStyleSheet("QWidget { background-color: rgba(255,255,153,150); }")
+        elif normal_overlap:
+            # Normal availability -> "pastelowy zielony"
             cell_w.setStyleSheet("QWidget { background-color: rgba(204,255,204,180); }")
 
     # ------------------- validate_all_cells -------------------

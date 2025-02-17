@@ -1,9 +1,13 @@
+##============ LIGHT_QSS ============##
+
 LIGHT_QSS = """
-QMainWindow {
-    background-color: #F2F2F2;
+/* ---------------- Okno główne, dialogi ---------------- */
+QMainWindow, QDialog, QProgressDialog {
+    background-color: #F3F3F3;
     color: #000000;
 }
 
+/* ---------------- Splitter ---------------- */
 QSplitter::handle {
     background-color: #DDDDDD;
 }
@@ -14,53 +18,85 @@ QSplitter::handle:vertical {
     height: 2px;
 }
 
-/* Dock */
-QDockWidget {
-    background-color: #F7F7F7;
-    color: #000000;
-    max-width: 250px;
-}
-QDockWidget QWidget {
-    background-color: #F7F7F7;
+/* ---------------- Sidebar & Stopka ---------------- */
+QFrame#CollapsibleSidebar,
+QWidget#FooterWidget {
+    background-color: #009d4f;
     color: #000000;
 }
 
-/* Dialogi / Progress */
-QDialog, QProgressDialog {
-    background-color: #F2F2F2;
-    color: #000000;
-}
-QDialog QPushButton, QProgressDialog QPushButton {
-    background-color: #2E86C1;
-    color: #FFFFFF;
-    border-radius: 4px;
-    padding: 6px 12px;
-}
-QDialog QPushButton:hover, QProgressDialog QPushButton:hover {
-    background-color: #1B4F72;
+/* Tytuł "Harmobot" w side-barze */
+QLabel#SidebarAppLabel {
+    font-size: 15px;
+    font-weight: bold;
+    color: #eef6ed;
+    padding-left: 6px;
 }
 
-/* Główne przyciski */
+/* Górny przycisk "menu" w side-barze */
+QPushButton#SidebarToggleBtn {
+    background-color: transparent;
+    border: none;
+    padding: 6px;
+}
+QPushButton#SidebarToggleBtn:hover {
+    background-color: rgba(0,0,0,0.07);
+}
+
+/* Przyciski w side-barze */
+QPushButton#SidebarButton {
+    background-color: transparent;
+    border: none;
+    text-align: left;
+    padding: 8px;
+    color: #eef6ed; 
+    font-weight: 500;
+    border-radius: 0px;
+    max-height: 30px;
+    min-height: 30px;
+}
+QPushButton#SidebarButton:hover {
+    background-color: rgba(0,0,0,0.07);
+}
+QPushButton#SidebarButton:checked {
+    background-color: rgba(0,0,0,0.15);
+    border-left: 4px solid #eef6ed;
+}
+QPushButton#SidebarButton:disabled {
+    color: #999999;
+}
+
+/* Tekst w stopce */
+QWidget#FooterWidget QLabel {
+    color: #666666;
+}
+
+/* ---------------- Przyciski ogólne (poza sidebar) ---------------- */
 QPushButton {
-    background-color: #2E86C1;
-    color: #FFFFFF;
+    background-color: #009d4f;
+    color: #eef6ed;
     border: none;
     border-radius: 4px;
-    padding: 6px 12px;
-    font-weight: bold;
+    padding: 8px 14px;
+    font-weight: 600;
 }
 QPushButton:hover {
-    background-color: #1B4F72;
+    background-color: rgba(0,130,65,0.99);
+}
+QPushButton:disabled {
+    background-color: #A9A9A9;
+    color: #FFFFFF;
+    border-radius: 4px;
 }
 
-/* Tabela + Lista */
+/* ---------------- Tabela (Schedule) i Lista (Summary) ---------------- */
 QTableWidget {
     background-color: #FFFFFF;
     color: #000000;
     gridline-color: #AAAAAA;
 }
 QHeaderView::section {
-    background-color: #DDDDDD;
+    background-color: #E0E0E0;
     color: #000000;
 }
 QListWidget {
@@ -68,49 +104,28 @@ QListWidget {
     color: #000000;
 }
 
-/* Etykiety */
+/* ---------------- Etykiety ---------------- */
 QLabel {
     color: #000000;
+    font-weight: 400;
 }
 
-/* Pola edycji */
+/* ---------------- Pola edycji + SpinBox ---------------- */
 QLineEdit {
     background-color: #FFFFFF;
     color: #000000;
     border: 1px solid #CCCCCC;
-    max-width: 65px;
+    border-radius: 3px;
+    padding: 4px;
+    max-width: 80px;
 }
-
-/* Menu */
-QMenuBar {
-    background-color: #E4E4E4;
-    color: #000000;
-}
-QMenuBar::item {
-    background-color: transparent;
-    color: #000000;
-}
-QMenuBar::item:selected {
-    background-color: #D0D0D0;
-}
-QMenu {
-    background-color: #F8F8F8;
-    color: #000000;
-}
-QMenu::item:selected {
-    background-color: #CCCCCC;
-}
-
-/* SpinBox – usunięcie strzałek */
 QSpinBox {
-    border: 1px solid #666666;
     background-color: #FFFFFF;
     color: #000000;
-    border-radius: 4px;
-    padding: 2px;
-    min-height: 15px;
-    max-width: 60px;
-    padding-right: 16px;
+    border: 1px solid #CCCCCC;
+    border-radius: 3px;
+    padding: 2px 6px;
+    max-width: 70px;
 }
 QSpinBox::up-button, QSpinBox::down-button {
     width: 0;
@@ -119,12 +134,15 @@ QSpinBox::up-button, QSpinBox::down-button {
 }
 """
 
+##============ FIRE_QSS ============##
+
 FIRE_QSS = """
-QMainWindow {
+QMainWindow, QDialog, QProgressDialog {
     background-color: #0D1117;
     color: #C9D1D9;
 }
 
+/* Splitter */
 QSplitter::handle {
     background-color: #161B22;
 }
@@ -135,56 +153,76 @@ QSplitter::handle:vertical {
     height: 2px;
 }
 
-/* Dock */
-QDockWidget {
+/* Sidebar & Footer */
+QFrame#CollapsibleSidebar,
+QWidget#FooterWidget {
     background-color: #161B22;
     color: #C9D1D9;
-    max-width: 250px;
 }
-QDockWidget QWidget {
-    background-color: #161B22;
+QLabel#SidebarAppLabel {
+    font-size: 15px;
+    font-weight: bold;
     color: #C9D1D9;
+    padding-left: 6px;
+}
+QPushButton#SidebarToggleBtn {
+    background-color: transparent;
+    border: none;
+    padding: 6px;
+}
+QPushButton#SidebarToggleBtn:hover {
+    background-color: rgba(200,200,200,0.1);
 }
 
-/* Dialogi / Progress */
-QDialog, QProgressDialog {
-    background-color: #161B22;
+QPushButton#SidebarButton {
+    background-color: transparent;
+    border: none;
+    text-align: left;
+    padding: 8px;
     color: #C9D1D9;
+    font-weight: 500;
+    border-radius: 0px;
+    max-height: 30px;
+    min-height: 30px;
 }
-QDialog QPushButton, QProgressDialog QPushButton {
-    background-color: #FF4500;
-    color: #1E1E1E;
-    border-radius: 4px;
-    padding: 6px 12px;
+QPushButton#SidebarButton:hover {
+    background-color: rgba(200,200,200,0.07);
 }
-QDialog QPushButton:hover, QProgressDialog QPushButton:hover {
-    background-color: #e03e00;
+QPushButton#SidebarButton:checked {
+    background-color: rgba(200,200,200,0.15);
+    border-left: 4px solid #FF4500;
+}
+QPushButton#SidebarButton:disabled {
+    color: #666666;
 }
 
-/* Główne przyciski */
+QWidget#FooterWidget QLabel {
+    color: #999999;
+}
+
+/* Przyciski ogólne */
 QPushButton {
     background-color: #FF4500;
     color: #1E1E1E;
     border: none;
     border-radius: 4px;
-    padding: 6px 12px;
-    font-weight: bold;
+    padding: 8px 14px;
+    font-weight: 600;
 }
 QPushButton:hover {
-    background-color: #e03e00;
+    background-color: rgba(255,69,0,0.7);
+}
+QPushButton:disabled {
+    background-color: #A9A9A9;
+    color: #FFFFFF;
+    border-radius: 4px;
 }
 
-/* Tabela + Lista */
+/* Tabela, Lista */
 QTableWidget {
     background-color: #21262D;
     color: #C9D1D9;
     gridline-color: #30363D;
-}
-QTableWidget::viewport {
-    background-color: #21262D;
-}
-QTableCornerButton::section {
-    background-color: #21262D;
 }
 QHeaderView::section {
     background-color: #30363D;
@@ -194,53 +232,29 @@ QListWidget {
     background-color: #21262D;
     color: #C9D1D9;
 }
-QTableCornerButton::section {
-    background-color: #21262D;
-}
 
 /* Etykiety */
 QLabel {
     color: #C9D1D9;
+    font-weight: 400;
 }
 
-/* Pola edycji */
+/* Pola edycji + SpinBox */
 QLineEdit {
     background-color: #30363D;
     color: #C9D1D9;
     border: 1px solid #FF4500;
-    max-width: 65px;
+    border-radius: 3px;
+    padding: 4px;
+    max-width: 80px;
 }
-
-/* Menu */
-QMenuBar {
-    background-color: #161B22;
-    color: #C9D1D9;
-}
-QMenuBar::item {
-    background-color: transparent;
-    color: #C9D1D9;
-}
-QMenuBar::item:selected {
-    background-color: #30363D;
-}
-QMenu {
-    background-color: #161B22;
-    color: #C9D1D9;
-}
-QMenu::item:selected {
-    background-color: #30363D;
-}
-
-/* SpinBox */
 QSpinBox {
-    border: 1px solid #FF4500;
     background-color: #30363D;
     color: #C9D1D9;
-    border-radius: 4px;
-    padding: 2px;
-    min-height: 15px;
-    max-width: 60px;
-    padding-right: 16px;
+    border: 1px solid #FF4500;
+    border-radius: 3px;
+    padding: 2px 6px;
+    max-width: 70px;
 }
 QSpinBox::up-button, QSpinBox::down-button {
     width: 0;
