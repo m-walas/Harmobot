@@ -2,6 +2,7 @@ name = "harmobot"
 type = "javascript"
 account_id = "80f49a0306abf4be4df45242f9799718"
 workers_dev = true
+compatibility_date = "2025-02-18"
 
 [vars]
 WORKER_VERSION = "v3.0"

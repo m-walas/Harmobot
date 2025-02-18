@@ -18,7 +18,7 @@ jobs:
 
       - name: Get latest tag version
         id: tag_version
-        run: echo "::set-output name=version::$(git describe --tags --abbrev=0)"
+        run: echo "version=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
       
       - name: Update WORKER_VERSION in wrangler.toml
         run: |
@@ -28,7 +28,7 @@ jobs:
           cat wrangler.toml
 
       - name: Install Wrangler
-        run: npm install -g @cloudflare/wrangler
+        run: npm install -g wrangler
 
       - name: Publish Worker
         run: wrangler publish
