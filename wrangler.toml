@@ -1,4 +1,4 @@
-name = "harmobot-worker"
+name = "harmobot"
 type = "javascript"
 account_id = "80f49a0306abf4be4df45242f9799718"
 workers_dev = true
