@@ -64,8 +64,8 @@ class InitialSetupDialog(QDialog):
 
         # main logo
         self.logo_label = QLabel()
-        self.default_pixmap = QPixmap(self.resource_path("assets/harmobot_logo_big.png"))
-        self.fire_pixmap = QMovie(self.resource_path("assets/harmobot_fire.gif"))
+        self.default_pixmap = QPixmap(resource_path("assets/harmobot_logo_big.png"))
+        self.fire_pixmap = QMovie(resource_path("assets/harmobot_fire.gif"))
         if self.default_pixmap.isNull():
             self.logo_label.setText("Harmobot logo")
             self.logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -165,7 +165,7 @@ class InitialSetupDialog(QDialog):
             logo_path = resource_path("assets/api/lettuce_logo_dark.png")
         else:
             logo_path = resource_path("assets/api/lettuce_logo_light.png")
-        pixmap = QPixmap(self.resource_path(logo_path))
+        pixmap = QPixmap(resource_path(logo_path))
         if not pixmap.isNull():
             pixmap.setDevicePixelRatio(2.0)
             pixmap = pixmap.scaledToHeight(32, Qt.TransformationMode.SmoothTransformation)
@@ -193,7 +193,7 @@ class InitialSetupDialog(QDialog):
             logo_path = resource_path("assets/api/schej_logo_dark.png")
         else:
             logo_path = resource_path("assets/api/schej_logo_light.png")
-        pixmap = QPixmap(self.resource_path(logo_path))
+        pixmap = QPixmap(resource_path(logo_path))
         if not pixmap.isNull():
             pixmap.setDevicePixelRatio(2.0)
             pixmap = pixmap.scaledToHeight(32, Qt.TransformationMode.SmoothTransformation)
