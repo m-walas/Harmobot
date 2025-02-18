@@ -13,6 +13,7 @@ from UI.footer import FooterWidget
 from UI.styles import LIGHT_QSS, FIRE_QSS
 
 from core.lettuce_service import fetch_event_data as lettuce_fetch_event_data
+from core.resources import resource_path
 from core.lettuce_service import process_data as lettuce_process_data
 from core.schej_service import fetch_event_data as schej_fetch_event_data
 from core.schej_service import process_data as schej_process_data
@@ -161,9 +162,9 @@ class InitialSetupDialog(QDialog):
         self.event_id_edit.clear()
 
         if self.fire_mode:
-            logo_path = "assets/api/lettuce_logo_dark.png"
+            logo_path = resource_path("assets/api/lettuce_logo_dark.png")
         else:
-            logo_path = "assets/api/lettuce_logo_light.png"
+            logo_path = resource_path("assets/api/lettuce_logo_light.png")
         pixmap = QPixmap(self.resource_path(logo_path))
         if not pixmap.isNull():
             pixmap.setDevicePixelRatio(2.0)
@@ -189,9 +190,9 @@ class InitialSetupDialog(QDialog):
         self.event_id_edit.clear()
 
         if self.fire_mode:
-            logo_path = "assets/api/schej_logo_dark.png"
+            logo_path = resource_path("assets/api/schej_logo_dark.png")
         else:
-            logo_path = "assets/api/schej_logo_light.png"
+            logo_path = resource_path("assets/api/schej_logo_light.png")
         pixmap = QPixmap(self.resource_path(logo_path))
         if not pixmap.isNull():
             pixmap.setDevicePixelRatio(2.0)
@@ -331,10 +332,3 @@ class InitialSetupDialog(QDialog):
         self.sidebar.set_dark_mode_icon(dark=True)
         self.update_engine_logo()
         self.update_spacer()
-
-    def resource_path(self, relative_path):
-        try:
-            base_path = sys._MEIPASS
-        except Exception:
-            base_path = os.path.abspath(".")
-        return os.path.join(base_path, relative_path)

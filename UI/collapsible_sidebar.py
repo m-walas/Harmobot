@@ -7,6 +7,8 @@ from PyQt6.QtCore import (
 )
 from PyQt6.QtGui import QIcon
 
+from core.resources import resource_path
+
 class SidebarButton(QPushButton):
     """
     Przycisk w sidebar.
@@ -60,10 +62,10 @@ class CollapsibleSidebar(QFrame):
         self._expanded_width = 200
         self._expanded = False
 
-        self.lettuce_icon_light = "assets/icons/light/lettuce_light.png"
-        self.lettuce_icon_dark  = "assets/icons/dark/lettuce_dark.png"
-        self.schej_icon_light   = "assets/icons/light/schej_light.png"
-        self.schej_icon_dark    = "assets/icons/dark/schej_dark.png"
+        self.lettuce_icon_light = resource_path("assets/icons/light/lettuce_light.png")
+        self.lettuce_icon_dark  = resource_path("assets/icons/dark/lettuce_dark.png")
+        self.schej_icon_light   = resource_path("assets/icons/light/schej_light.png")
+        self.schej_icon_dark    = resource_path("assets/icons/dark/schej_dark.png")
 
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
         self.setMinimumWidth(self._collapsed_width)
@@ -80,7 +82,7 @@ class CollapsibleSidebar(QFrame):
         top_layout.setContentsMargins(0, 0, 0, 0)
         top_layout.setSpacing(5)
 
-        menu_icon = QIcon("assets/icons/light/menu_light.png")
+        menu_icon = QIcon(resource_path("assets/icons/light/menu_light.png"))
         self.toggle_btn = QPushButton()
         self.toggle_btn.setObjectName("SidebarToggleBtn")
         self.toggle_btn.setIcon(menu_icon)
@@ -128,24 +130,24 @@ class CollapsibleSidebar(QFrame):
         self.main_layout.addWidget(self.btn_schej)
 
         # Wczytaj CSV
-        csv_icon = QIcon("assets/icons/light/load_csv_light.png")
+        csv_icon = QIcon(resource_path("assets/icons/light/load_csv_light.png"))
         self.btn_load_csv = SidebarButton(icon=csv_icon, text="Wczytaj CSV", checkable=False)
         self.btn_load_csv.clicked.connect(lambda: self.sig_load_csv.emit())
         self.main_layout.addWidget(self.btn_load_csv)
 
         # Jeśli main_window => eksporty
         if not initial_mode:
-            exp_csv_icon = QIcon("assets/icons/light/export_csv_light.png")
+            exp_csv_icon = QIcon(resource_path("assets/icons/light/export_csv_light.png"))
             self.btn_export_csv = SidebarButton(icon=exp_csv_icon, text="Eksport CSV", checkable=False)
             self.btn_export_csv.clicked.connect(lambda: self.sig_export_csv.emit())
             self.main_layout.addWidget(self.btn_export_csv)
 
-            exp_html_icon = QIcon("assets/icons/light/export_html_light.png")
+            exp_html_icon = QIcon(resource_path("assets/icons/light/export_html_light.png"))
             self.btn_export_html = SidebarButton(icon=exp_html_icon, text="Eksport HTML", checkable=False)
             self.btn_export_html.clicked.connect(lambda: self.sig_export_html.emit())
             self.main_layout.addWidget(self.btn_export_html)
 
-            exp_png_icon = QIcon("assets/icons/light/export_png_light.png")
+            exp_png_icon = QIcon(resource_path("assets/icons/light/export_png_light.png"))
             self.btn_export_png = SidebarButton(icon=exp_png_icon, text="Eksport PNG", checkable=False)
             self.btn_export_png.clicked.connect(lambda: self.sig_export_png.emit())
             self.main_layout.addWidget(self.btn_export_png)
@@ -154,14 +156,14 @@ class CollapsibleSidebar(QFrame):
         self.main_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
 
         # FireMode
-        fire_icon = QIcon("assets/icons/light/theme_toggle_light.png")
+        fire_icon = QIcon(resource_path("assets/icons/light/theme_toggle_light.png"))
         self.btn_fire_mode = SidebarButton(icon=fire_icon, text="FireMode", checkable=False)
         self.btn_fire_mode.clicked.connect(lambda: self.sig_fire_mode.emit())
         self.main_layout.addWidget(self.btn_fire_mode)
 
         # Kolor czipów – checkable
         if not initial_mode:
-            color_icon = QIcon("assets/icons/light/colorize_chips_light.png")
+            color_icon = QIcon(resource_path("assets/icons/light/colorize_chips_light.png"))
             self.btn_colorize = SidebarButton(icon=color_icon, text="Kolor czipów", checkable=True)
             self.btn_colorize.setChecked(False)
             self.btn_colorize.clicked.connect(lambda: self.sig_colorize.emit())
@@ -169,7 +171,7 @@ class CollapsibleSidebar(QFrame):
 
         # Parametry – checkable
         if not initial_mode:
-            params_icon = QIcon("assets/icons/light/parameters_light.png")
+            params_icon = QIcon(resource_path("assets/icons/light/parameters_light.png"))
             self.btn_params = SidebarButton(icon=params_icon, text="Parametry", checkable=True)
             self.btn_params.setChecked(True)
             self.btn_params.clicked.connect(lambda: self.sig_toggle_params.emit())
@@ -182,14 +184,14 @@ class CollapsibleSidebar(QFrame):
         self.main_layout.addWidget(sep_bottom)
 
         # Dokumentacja
-        doc_icon = QIcon("assets/icons/light/docs_light.png")
+        doc_icon = QIcon(resource_path("assets/icons/light/docs_light.png"))
         self.btn_doc = SidebarButton(icon=doc_icon, text="Dokumentacja", checkable=False)
         self.btn_doc.clicked.connect(lambda: self.sig_documentation.emit())
         self.main_layout.addWidget(self.btn_doc)
 
         # Powrót do initial – only main
         if not initial_mode:
-            back_icon = QIcon("assets/icons/light/back_light.png")
+            back_icon = QIcon(resource_path("assets/icons/light/back_light.png"))
             self.btn_go_initial = SidebarButton(icon=back_icon, text="Powrót", checkable=False)
             self.btn_go_initial.clicked.connect(lambda: self.sig_go_initial.emit())
             self.main_layout.addWidget(self.btn_go_initial)
@@ -211,8 +213,6 @@ class CollapsibleSidebar(QFrame):
     def toggle_sidebar(self):
         """
         Główna metoda rozwijania/zwijania sidebar.
-        Faktycznie zmieniamy min/maxWidth z animacją
-        i na końcu ustawiamy setFixedWidth.
         """
         end_width = self._expanded_width if not self._expanded else self._collapsed_width
         self._expanded = not self._expanded
@@ -247,26 +247,16 @@ class CollapsibleSidebar(QFrame):
                 btn.show_text(self._expanded)
 
     def _on_animation_finished(self):
-        """
-        Po zakończeniu animacji wymuszamy 'setFixedWidth',
-        co w praktyce zapewnia, że layout rodzica nie narzuci
-        ponownie starej szerokości.
-        """
         final_w = self._expanded_width if self._expanded else self._collapsed_width
         self.setFixedWidth(final_w)
 
     def disable_api_tabs(self, disabled: bool):
-        """Blokuje klikanie w Lettuce i Schej."""
         if hasattr(self, "btn_lettuce"):
             self.btn_lettuce.setEnabled(not disabled)
         if hasattr(self, "btn_schej"):
             self.btn_schej.setEnabled(not disabled)
 
     def set_dark_mode_icon(self, dark: bool):
-        """
-        Przełącza WYŁĄCZNIE ikony Lettuce i Schej między wersją light i dark.
-        Reszta przycisków pozostaje bez zmian.
-        """
         if dark:
             self.btn_lettuce.setIcon(QIcon(self.lettuce_icon_dark))
             self.btn_schej.setIcon(QIcon(self.schej_icon_dark))
