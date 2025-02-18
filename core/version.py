@@ -1,1 +1,1 @@
-__app_version__ = "3.0"
+__app_version__ = "3.1"
