@@ -1,5 +1,5 @@
 name = "harmobot"
-type = "javascript"
+main = "worker.js"
 account_id = "80f49a0306abf4be4df45242f9799718"
 workers_dev = true
 compatibility_date = "2025-02-18"
