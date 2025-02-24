@@ -5,19 +5,21 @@ from collections import defaultdict
 
 def build_day_slots(participants, poll_dates, shift_duration, day_ranges=None):
     """
-    Buduje listę slotów (start_dt, end_dt) dla wszystkich dni w poll_dates,
-    opierając się na minimalnych i maksymalnych godzinach dostępności.
-    
-    Parametry:
-        - participants: [{'name': 'A', 'availabilities': [(dt1, dt2), ...], 'ifNeeded': [...]}, ...]
-        - poll_dates: lista dat w formacie "YYYY-MM-DD"
-        - shift_duration: długość jednego slotu (w minutach)
-        - day_ranges: opcjonalnie, słownik z minimalnymi i maksymalnymi godzinami dla każdego dnia
-            { "YYYY-MM-DD": (start_dt, end_dt), ... }
-    Zwraca:
-        (day_slots_dict, unique_slots)
-        - day_slots_dict: { "YYYY-MM-DD": [(start, end), ...], ... }
-        - unique_slots: posortowana lista unikalnych slotów ze wszystkich dni
+    Builds a list of time slots (start_dt, end_dt) for all days in poll_dates based on the available time ranges.
+
+    Args:
+        participants (list): List of dictionaries with keys:
+            - 'name': str,
+            - 'availabilities': list of tuples (datetime, datetime),
+            - 'ifNeeded': list of tuples (datetime, datetime)
+        poll_dates (list): List of date strings in "YYYY-MM-DD" format.
+        shift_duration (int): Duration of each slot in minutes.
+        day_ranges (dict, optional): Dictionary mapping each date string to a tuple (start_dt, end_dt).
+
+    Returns:
+        tuple: (day_slots_dict, unique_slots) where:
+            - day_slots_dict is a dict mapping each date string to a list of slots (start, end).
+            - unique_slots is a sorted list of unique slots across all days.
     """
     day_slots_dict = {}
     for day_str in poll_dates:
@@ -57,43 +59,59 @@ def build_day_slots(participants, poll_dates, shift_duration, day_ranges=None):
 def assign_shifts(
     participants,
     slot_list,
-    num_required,           # maks. liczba osób w slocie
-    min_required,           # min. liczba osób w slocie
-    max_hours,              # maks. godzin w całym okresie
-    max_hours_per_day,      # maks. godzin dziennie
-    gap_penalty=3,          # kara za przerwy
-    coverage_reward=2,      # nagroda za ciągłość w ciągu dnia
-    day_coverage_reward=2,  # nagroda za każdy dzień obsadzony
-    ifNeeded_penalty=2,     # kara za sloty ifNeeded
-    time_limit=15.0,
-    use_60_percent_cores=True
+    num_required,           # maximum number of participants per slot
+    min_required,           # minimum number of participants per slot
+    max_hours,              # maximum hours over the entire period
+    max_hours_per_day,      # maximum hours per day
+    solver_time_limit,      # time limit for the solver from settings dialog
+    solver_num_threads,     # number of threads for the solver from settings dialog
+    gap_penalty=3,          # penalty for breaks
+    coverage_reward=2,      # reward for continuity within a day
+    day_coverage_reward=2,  # reward for each covered day
+    ifNeeded_penalty=2      # penalty for 'ifNeeded' slots
 ):
     """
-    Rozpisuje dyżury i zwraca (schedule_data, total_hours).
+    Assigns shifts and returns (schedule_data, total_hours).
 
-    ifNeeded_penalty => minusowy składnik w funkcji celu:
-        - ifNeeded_penalty * SUM( assignments[i,j] ) 
-        dla tych (i,j), które są 'ifNeeded'.
+    The 'ifNeeded_penalty' is applied as a negative component in the objective function:
+        - ifNeeded_penalty * sum(assignments[i,j]) for assignments marked as 'ifNeeded'.
+
+    Args:
+        participants (list): List of participant dictionaries.
+        slot_list (list): List of time slots as tuples (start_dt, end_dt).
+        num_required (int): Maximum number of participants per slot.
+        min_required (int): Minimum number of participants per slot.
+        max_hours (float): Maximum total hours per participant.
+        max_hours_per_day (float): Maximum hours per participant per day.
+        solver_time_limit (int): Time limit for the solver in seconds.
+        solver_num_threads (int): Number of threads for the solver.
+        gap_penalty (int, optional): Penalty for breaks.
+        coverage_reward (int, optional): Reward for continuity in a day.
+        day_coverage_reward (int, optional): Reward for each day that is covered.
+        ifNeeded_penalty (int, optional): Penalty for assignments in 'ifNeeded' slots.
+
+    Returns:
+        tuple: (schedule_data, total_hours) where:
+            - schedule_data is a list of dictionaries with keys 'Shift Start', 'Shift End', and 'Assigned To'.
+            - total_hours is a dict mapping participant names to their total assigned hours.
+        If no feasible solution is found, returns (None, None).
     """
     if not participants or not slot_list:
         return None, None
 
     model = cp_model.CpModel()
 
-    # Długość slotu w minutach
+    # Duration of a slot in minutes
     shift_minutes = int((slot_list[0][1] - slot_list[0][0]).total_seconds() // 60)
 
-    # Limity godzinowe
+    # Convert hour limits to minutes
     max_minutes = int(max_hours * 60)
     max_minutes_per_day = int(max_hours_per_day * 60)
 
     num_participants = len(participants)
     num_shifts = len(slot_list)
 
-    # -------------------------------------------
-    # Zmienne decyzyjne: assignments[i,j], shift_assigned[j]
-    # + flaga ifNeeded
-    # -------------------------------------------
+    # Decision variables: assignments[i,j], shift_assigned[j], and ifNeeded flag
     assignments = {}
     shift_assigned = {}
     if_needed_flag = {}
@@ -105,12 +123,12 @@ def assign_shifts(
         for j in range(num_shifts):
             start_dt, end_dt = slot_list[j]
 
-            # czy dany slot (start_dt, end_dt) jest w normalnej avail...
+            # Check if the slot is within normal availability
             normal_ok = any(
                 start_dt >= avs and end_dt <= ave
                 for (avs, ave) in participants[i]['availabilities']
             )
-            # ...albo w ifNeeded
+            # Check if the slot is within 'ifNeeded'
             ifneeded_ok = any(
                 start_dt >= ivs and end_dt <= ive
                 for (ivs, ive) in participants[i]['ifNeeded']
@@ -126,12 +144,10 @@ def assign_shifts(
             else:
                 assignments[(i, j)] = None
 
-    # -------------------------------------------
-    # Ograniczenie: min_required i num_required
-    # -------------------------------------------
+    # Constraints: enforce min_required and num_required per shift
     for j in range(num_shifts):
         vars_in_shift = [
-            assignments[(i, j)] 
+            assignments[(i, j)]
             for i in range(num_participants)
             if assignments[(i, j)] is not None
         ]
@@ -145,13 +161,11 @@ def assign_shifts(
         else:
             model.Add(shift_assigned[j] == 0)
 
-    # -------------------------------------------
-    # Ograniczenia godzinowe
-    # -------------------------------------------
+    # Hourly constraints for each participant
     for i in range(num_participants):
         total_shifts_i = [
-            assignments[(i, j)] 
-            for j in range(num_shifts) 
+            assignments[(i, j)]
+            for j in range(num_shifts)
             if assignments[(i, j)] is not None
         ]
         if total_shifts_i:
@@ -167,9 +181,7 @@ def assign_shifts(
                 day_minutes = sum(arr) * shift_minutes
                 model.Add(day_minutes <= max_minutes_per_day)
 
-    # -------------------------------------------
-    # Struktury do gap_penalty, coverage_reward itd.
-    # -------------------------------------------
+    # Structures for gap_penalty, coverage_reward, etc.
     day_to_slots_idx = defaultdict(list)
     for j, slot in enumerate(slot_list):
         d = slot[0].date()
@@ -177,7 +189,7 @@ def assign_shifts(
     for d in day_to_slots_idx:
         day_to_slots_idx[d].sort(key=lambda idx: slot_list[idx][0])
 
-    # (1) gap_penalty = kara za dodatkowe "bloki"
+    # (1) gap_penalty: penalty for extra blocks (gaps)
     start_vars = {}
     for i in range(num_participants):
         for d, slots_idx in day_to_slots_idx.items():
@@ -218,7 +230,7 @@ def assign_shifts(
 
     sum_of_extras = sum(extra_blocks)
 
-    # (2) coverage_reward = nagroda za ciągłość
+    # (2) coverage_reward: reward for continuity
     continuity_vars = []
     for d, slots_idx in day_to_slots_idx.items():
         for k in range(len(slots_idx) - 1):
@@ -231,7 +243,7 @@ def assign_shifts(
             continuity_vars.append(cvar)
     sum_of_continuity = sum(continuity_vars)
 
-    # (3) day_covered
+    # (3) Day coverage: reward for each day that is covered
     day_covered = {}
     for d, slots_idx in day_to_slots_idx.items():
         dc = model.NewBoolVar(f'day_covered_{d}')
@@ -241,9 +253,7 @@ def assign_shifts(
         day_covered[d] = dc
     sum_of_covered_days = sum(day_covered.values())
 
-    # -------------------------------------------
-    # Suma przypisań (ile osób łącznie we wszystkich slotach)
-    # -------------------------------------------
+    # Total assignments across all slots
     all_assigns = []
     for i in range(num_participants):
         for j in range(num_shifts):
@@ -251,18 +261,14 @@ def assign_shifts(
                 all_assigns.append(assignments[(i, j)])
     sum_of_assignments = sum(all_assigns)
 
-    # -------------------------------------------
-    # Liczymy sumę ifNeeded
-    # -------------------------------------------
+    # Sum of ifNeeded assignments
     ifNeeded_assigns = []
     for (i, j), var in assignments.items():
         if var is not None and if_needed_flag.get((i, j), 0) == 1:
             ifNeeded_assigns.append(var)
     sum_of_ifNeeded = sum(ifNeeded_assigns)
 
-    # -------------------------------------------
-    # Funkcja celu
-    # -------------------------------------------
+    # Objective function
     objective_expr = (
         sum_of_assignments
         + coverage_reward * sum_of_continuity
@@ -272,29 +278,16 @@ def assign_shifts(
     )
     model.Maximize(objective_expr)
 
-    # -------------------------------------------
-    # Konfiguracja solvera
-    # -------------------------------------------
+    # Solver configuration
     solver = cp_model.CpSolver()
-    solver.parameters.max_time_in_seconds = time_limit
+    solver.parameters.max_time_in_seconds = solver_time_limit
+    solver.parameters.num_search_workers = solver_num_threads
 
-    if use_60_percent_cores:
-        num_cores = multiprocessing.cpu_count()
-        use_cores = max(1, int(num_cores * 0.60))
-        solver.parameters.num_search_workers = use_cores
-    else:
-        solver.parameters.num_search_workers = 1
-
-    # -------------------------------------------
-    # Rozwiązywanie
-    # -------------------------------------------
+    # Solve the model
     status = solver.Solve(model)
     if status not in [cp_model.OPTIMAL, cp_model.FEASIBLE]:
         return None, None
 
-    # -------------------------------------------
-    # Odczytanie rozwiązania
-    # -------------------------------------------
     schedule_data = []
     total_hours = {p['name']: 0.0 for p in participants}
     for j in range(num_shifts):

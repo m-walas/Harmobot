@@ -1,0 +1,61 @@
+/* cafe.qss - Cafe theme color definitions for base.qss placeholders */
+
+/* Main Window and Dialogs */
+%MAIN_BACKGROUND%: #f5f5dc;
+%MAIN_TEXT%: #3e2723;
+
+/* Splitter */
+%SPLITTER_COLOR%: #d7ccc8;
+
+/* Sidebar & Footer */
+%SIDEBAR_BACKGROUND%: #8d6e63;
+%SIDEBAR_TEXT%: #3e2723;
+
+/* Sidebar Title */
+%SIDEBAR_TITLE%: #d7ccc8;
+
+/* Sidebar Toggle Button Hover */
+%SIDEBAR_TOGGLE_HOVER%: rgba(141,110,99,0.2);
+
+/* Sidebar Button */
+%SIDEBAR_BUTTON_COLOR%: #d7ccc8;
+%SIDEBAR_BUTTON_HOVER%: rgba(141,110,99,0.2);
+%SIDEBAR_BUTTON_CHECKED%: rgba(141,110,99,0.4);
+%SIDEBAR_BUTTON_CHECKED_BORDER%: #d7ccc8;
+%SIDEBAR_BUTTON_DISABLED%: #a1887f;
+
+/* Footer Text */
+%FOOTER_TEXT%: #3e2723;
+
+/* General Buttons */
+%BUTTON_BACKGROUND%: #8d6e63;
+%BUTTON_TEXT%: #f5f5dc;
+%BUTTON_HOVER%: rgba(141,110,99,0.8);
+%BUTTON_DISABLED_BG%: #bcaaa4;
+%BUTTON_DISABLED_TEXT%: #f5f5dc;
+
+/* Table and List */
+%TABLE_BACKGROUND%: #f5f5dc;
+%TABLE_TEXT%: #3e2723;
+%TABLE_GRIDLINE%: #d7ccc8;
+%TABLE_HEADER_BACKGROUND%: #d7ccc8;
+%TABLE_SCROLLAREA%: #f5f5dc;
+%TABLE_CORNERBUTTON%: #d7ccc8;
+%TABLE_HEADER_TEXT%: #3e2723;
+%LIST_BACKGROUND%: #f5f5dc;
+%LIST_TEXT%: #3e2723;
+
+/* Labels */
+%LABEL_TEXT%: #3e2723;
+
+/* Edit Fields and SpinBoxes */
+%LINEEDIT_BACKGROUND%: #ffffff;
+%LINEEDIT_TEXT%: #3e2723;
+%LINEEDIT_BORDER%: #d7ccc8;
+%SPINBOX_BACKGROUND%: #ffffff;
+%SPINBOX_TEXT%: #3e2723;
+%SPINBOX_BORDER%: #d7ccc8;
+
+/* Chips */
+%CHIP_BACKGROUND%: #d7ccc8;
+%CHIP_TEXT%: #3e2723;

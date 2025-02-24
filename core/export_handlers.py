@@ -3,6 +3,12 @@ from PyQt6.QtWidgets import QFileDialog
 from datetime import datetime
 
 def load_from_csv(main_window):
+    """
+    Loads schedule data from a CSV file and updates the schedule widget in the main window.
+    
+    CSV file must use ';' as delimiter and have at least 4 columns:
+        - Data, Start, Koniec, Osoby
+    """
     filepath, _ = QFileDialog.getOpenFileName(
         main_window, "Wczytaj CSV", "", "CSV Files (*.csv)"
     )
@@ -63,6 +69,12 @@ def load_from_csv(main_window):
 
 
 def export_to_csv(main_window):
+    """
+    Exports the current schedule data to a CSV file.
+    
+    The exported CSV will have the following columns:
+        - Data, Start, Koniec, Osoby
+    """
     filepath, _ = QFileDialog.getSaveFileName(main_window, "Eksport do CSV", "", "CSV Files (*.csv)")
     if not filepath:
         return
@@ -80,12 +92,14 @@ def export_to_csv(main_window):
                 en_str = row['Shift End'].strftime("%H:%M")
                 assigned = row['Assigned To']
                 writer.writerow([dt_str, st_str, en_str, assigned])
-
     except Exception as e:
         return
 
 
 def export_to_png(main_window):
+    """
+    Exports the schedule widget as a PNG image.
+    """
     filepath, _ = QFileDialog.getSaveFileName(main_window, "Eksport do PNG", "", "PNG Files (*.png)")
     if not filepath:
         return
@@ -98,6 +112,9 @@ def export_to_png(main_window):
 
 
 def export_to_html(main_window):
+    """
+    Exports the current schedule data to an HTML file.
+    """
     filepath, _ = QFileDialog.getSaveFileName(main_window, "Eksport do HTML", "", "HTML Files (*.html)")
     if not filepath:
         return
@@ -131,6 +148,5 @@ def export_to_html(main_window):
 
         with open(filepath, "w", encoding="utf-8") as f:
             f.write("\n".join(lines))
-
     except Exception as e:
         return

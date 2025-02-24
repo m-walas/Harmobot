@@ -1,0 +1,61 @@
+/* dracula.qss - Dracula theme color definitions for base.qss placeholders */
+
+/* Main Window and Dialogs */
+%MAIN_BACKGROUND%: #282a36;
+%MAIN_TEXT%: #f8f8f2;
+
+/* Splitter */
+%SPLITTER_COLOR%: #44475a;
+
+/* Sidebar & Footer */
+%SIDEBAR_BACKGROUND%: #6272a4;
+%SIDEBAR_TEXT%: #f8f8f2;
+
+/* Sidebar Title */
+%SIDEBAR_TITLE%: #bd93f9;
+
+/* Sidebar Toggle Button Hover */
+%SIDEBAR_TOGGLE_HOVER%: rgba(55, 67, 105, 0.2);
+
+/* Sidebar Button */
+%SIDEBAR_BUTTON_COLOR%: #f8f8f2;
+%SIDEBAR_BUTTON_HOVER%: rgba(55, 67, 105, 0.2);
+%SIDEBAR_BUTTON_CHECKED%: rgba(255, 255, 255, 0.2);
+%SIDEBAR_BUTTON_CHECKED_BORDER%: #bd93f9;
+%SIDEBAR_BUTTON_DISABLED%: #44475a;
+
+/* Footer Text */
+%FOOTER_TEXT%: #6272a4;
+
+/* General Buttons */
+%BUTTON_BACKGROUND%: #6272a4;
+%BUTTON_TEXT%: #f8f8f2;
+%BUTTON_HOVER%: rgba(98,114,164,0.8);
+%BUTTON_DISABLED_BG%: #44475a;
+%BUTTON_DISABLED_TEXT%: #f8f8f2;
+
+/* Table and List */
+%TABLE_BACKGROUND%: #44475a;
+%TABLE_TEXT%: #f8f8f2;
+%TABLE_GRIDLINE%: #282a36;
+%TABLE_HEADER_BACKGROUND%: #282a36;
+%TABLE_SCROLLAREA%: #44475a;
+%TABLE_CORNERBUTTON%: #282a36;
+%TABLE_HEADER_TEXT%: #f8f8f2;
+%LIST_BACKGROUND%: #44475a;
+%LIST_TEXT%: #f8f8f2;
+
+/* Labels */
+%LABEL_TEXT%: #f8f8f2;
+
+/* Edit Fields and SpinBoxes */
+%LINEEDIT_BACKGROUND%: #44475a;
+%LINEEDIT_TEXT%: #f8f8f2;
+%LINEEDIT_BORDER%: #282a36;
+%SPINBOX_BACKGROUND%: #44475a;
+%SPINBOX_TEXT%: #f8f8f2;
+%SPINBOX_BORDER%: #6272a4;
+
+/* Chips */
+%CHIP_BACKGROUND%: #6272a4;
+%CHIP_TEXT%: #282a36;

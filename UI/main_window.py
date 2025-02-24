@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QMessageBox,
     QPushButton, QFormLayout, QSpinBox, QDialog, QProgressDialog, QFrame
 )
-from PyQt6.QtCore import Qt, QThread, pyqtSignal, QObject, QUrl
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QObject, QUrl, QSettings
 from PyQt6.QtGui import QDesktopServices
 
 from UI.initial_setup_dialog import InitialSetupDialog
@@ -12,18 +12,28 @@ from UI.schedule_matrix_widget import ScheduleMatrixWidget
 from UI.summary_widget import SummaryListWidget
 from UI.footer import FooterWidget
 from UI.collapsible_sidebar import CollapsibleSidebar
-from UI.styles import LIGHT_QSS, FIRE_QSS
+from UI.settings_dialog import SettingsDialog
 
 from core.export_handlers import load_from_csv, export_to_csv, export_to_html, export_to_png
 from core.scheduler import build_day_slots, assign_shifts
 from core.update_checker import get_update_checker
+from core.resources import resource_path, get_icon_path
 from core.version import __app_version__
 
+
 class SolverWorker(QObject):
+    """
+    Worker for solving shift assignments.
+    Emits progress and finished signals.
+    """
     finished = pyqtSignal(object, object)
     progress = pyqtSignal(str)
+
     def __init__(self, participants, slot_list, num_required, min_required,
-                max_hours, max_hours_per_day, parent=None):
+                max_hours, max_hours_per_day, solver_time_limit, solver_num_threads, parent=None):
+        """
+        Initialize the worker.
+        """
         super().__init__(parent)
         self.participants = participants
         self.slot_list = slot_list
@@ -31,32 +41,44 @@ class SolverWorker(QObject):
         self.min_required = min_required
         self.max_hours = max_hours
         self.max_hours_per_day = max_hours_per_day
+        self.solver_time_limit = solver_time_limit
+        self.solver_num_threads = solver_num_threads
+
     def run(self):
+        """
+        Execute the solver and emit the final result.
+        """
         self.progress.emit("Liczenie...")
         schedule_data, total_hrs = assign_shifts(
-            self.participants,
-            self.slot_list,
-            self.num_required,
-            self.min_required,
-            self.max_hours,
-            self.max_hours_per_day
+            participants=self.participants,
+            slot_list=self.slot_list,
+            num_required=self.num_required,
+            min_required=self.min_required,
+            max_hours=self.max_hours,
+            max_hours_per_day=self.max_hours_per_day,
+            solver_time_limit=self.solver_time_limit,
+            solver_num_threads=self.solver_num_threads
         )
         self.progress.emit("Zakończono liczenie.")
         self.finished.emit(schedule_data, total_hrs)
 
+
 class MainWindow(QMainWindow):
     """
-    Główne okno aplikacji.
+    Main application window.
     """
-    def __init__(self, fire_mode=False):
+    def __init__(self):
+        """
+        Initialize the main window.
+        """
         super().__init__()
-        self.fire_mode = fire_mode
-        self.engine_name = "Lettuce"
+        self.settings = QSettings("Harmobot", "Harmobot")
+        self.engine_name = "Cabbage"
 
         self.setWindowTitle("Harmobot")
         self.resize(1300, 800)
 
-        # Dane – zostaną przypisane z initial_setup_dialog
+        # Data – will be assigned from the initial setup dialog
         self.participants = []
         self.poll_dates = []
         self.day_ranges = None
@@ -64,37 +86,37 @@ class MainWindow(QMainWindow):
         self.day_slots_dict = {}
         self.current_highlight_person = None
 
-        # Ustawienie głównego widgetu i layoutu
+        # Set up central widget and layout
         central_widget = QWidget()
         central_vlayout = QVBoxLayout(central_widget)
         central_vlayout.setContentsMargins(0, 0, 0, 0)
         central_vlayout.setSpacing(0)
         self.setCentralWidget(central_widget)
 
-        # Layout: sidebar + panel parametrów + schedule/sumaryczny widok
+        # Layout: sidebar + parameter panel + schedule/summary view
         top_widget = QWidget()
         top_hlayout = QHBoxLayout(top_widget)
         top_hlayout.setContentsMargins(0, 0, 0, 0)
         top_hlayout.setSpacing(0)
 
         self.sidebar = CollapsibleSidebar(initial_mode=False)
-        self.sidebar.sig_select_lettuce.connect(self.on_select_lettuce)
+        self.sidebar.sig_select_cabbage.connect(self.on_select_cabbage)
         self.sidebar.sig_select_schej.connect(self.on_select_schej)
         self.sidebar.sig_load_csv.connect(self.load_from_csv)
         self.sidebar.sig_export_csv.connect(self.export_to_csv)
         self.sidebar.sig_export_html.connect(self.export_to_html)
         self.sidebar.sig_export_png.connect(self.export_to_png)
-        self.sidebar.sig_fire_mode.connect(self.on_sidebar_fire_mode)
         self.sidebar.sig_colorize.connect(self.on_sidebar_colorize)
         self.sidebar.sig_toggle_params.connect(self.on_toggle_params_panel)
-        self.sidebar.sig_documentation.connect(self.on_show_doc_main)
+        self.sidebar.sig_settings.connect(self.on_settings)
+        self.sidebar.sig_documentation.connect(self.on_show_doc)
         self.sidebar.sig_go_initial.connect(self.on_go_initial)
         top_hlayout.addWidget(self.sidebar, stretch=0)
 
         self.param_frame = self._create_param_frame()
         top_hlayout.addWidget(self.param_frame, stretch=0)
 
-        # schedule + summary
+        # Schedule and summary
         schedule_container = QWidget()
         schedule_vlayout = QVBoxLayout(schedule_container)
         schedule_vlayout.setContentsMargins(0, 0, 0, 0)
@@ -116,36 +138,27 @@ class MainWindow(QMainWindow):
 
         central_vlayout.addWidget(top_widget, stretch=1)
 
-        # Stopka
+        # Footer
         self.footer = FooterWidget()
         self.footer.setFixedHeight(40)
         central_vlayout.addWidget(self.footer, stretch=0)
 
         # Update checker
         update_checker = get_update_checker()
-        if update_checker.has_update:
-            self.footer.setUpdateAvailable(True)
-        else:
-            self.footer.setUpdateAvailable(False)
+        self.footer.setUpdateAvailable(update_checker.has_update)
 
         self.sidebar.disable_api_tabs(True)
 
-        if self.fire_mode:
-            self.apply_fire_mode_theme()
-            self.sidebar.set_dark_mode_icon(dark=True)
-        else:
-            self.apply_light_theme()
-            self.sidebar.set_dark_mode_icon(dark=False)
+        self.apply_current_theme()
 
         if self.participants and self.poll_dates:
             self.initialize_schedule_table()
 
     def initialize_schedule_table(self):
-        """Generuje pustą tabelę harmonogramu – sloty obliczane według engine."""
-        if self.engine_name == "Schej":
-            shift_duration = 15
-        else:
-            shift_duration = 30
+        """
+        Initialize the schedule table using participants and poll dates.
+        """
+        shift_duration = 15 if self.engine_name == "Schej" else 30
         self.day_slots_dict, self.full_slots = build_day_slots(
             self.participants,
             self.poll_dates,
@@ -168,6 +181,9 @@ class MainWindow(QMainWindow):
         )
 
     def _create_param_frame(self):
+        """
+        Create and return the parameter panel widget.
+        """
         param_frame = QFrame()
         param_vlayout = QVBoxLayout(param_frame)
         param_vlayout.setContentsMargins(8, 8, 8, 8)
@@ -180,22 +196,22 @@ class MainWindow(QMainWindow):
         self.num_required_spin = QSpinBox()
         self.num_required_spin.setRange(1, 20)
         self.num_required_spin.setValue(2)
-        self.num_required_spin.valueChanged.connect(self.validate_num_required)
+        self.num_required_spin.valueChanged.connect(self.validate_requireds)
 
         self.min_required_spin = QSpinBox()
         self.min_required_spin.setRange(1, 20)
         self.min_required_spin.setValue(1)
-        self.min_required_spin.valueChanged.connect(self.validate_min_required)
+        self.min_required_spin.valueChanged.connect(self.validate_requireds)
 
         self.max_hours_spin = QSpinBox()
         self.max_hours_spin.setRange(0, 24)
         self.max_hours_spin.setValue(4)
-        self.max_hours_spin.valueChanged.connect(self.validate_max_hours)
+        self.max_hours_spin.valueChanged.connect(self.validate_hours)
 
         self.max_hours_per_day_spin = QSpinBox()
         self.max_hours_per_day_spin.setRange(0, 12)
         self.max_hours_per_day_spin.setValue(2)
-        self.max_hours_per_day_spin.valueChanged.connect(self.validate_max_hours_per_day)
+        self.max_hours_per_day_spin.valueChanged.connect(self.validate_hours)
 
         form_layout.addRow("Pożądana liczba osób:", self.num_required_spin)
         form_layout.addRow("Minimalna liczba:", self.min_required_spin)
@@ -209,40 +225,31 @@ class MainWindow(QMainWindow):
         param_vlayout.addLayout(form_layout)
         return param_frame
 
-    def validate_num_required(self):
+    def validate_requireds(self):
+        """
+        Ensure the minimum required does not exceed the desired number.
+        """
         num_required = self.num_required_spin.value()
         if self.min_required_spin.value() > num_required:
             self.min_required_spin.setValue(num_required)
 
-    def validate_min_required(self):
-        num_required = self.num_required_spin.value()
-        if self.min_required_spin.value() > num_required:
-            self.min_required_spin.setValue(num_required)
-
-    def validate_max_hours(self):
-        max_hours = self.max_hours_spin.value()
-        if self.max_hours_per_day_spin.value() > max_hours:
-            self.max_hours_per_day_spin.setValue(max_hours)
-
-    def validate_max_hours_per_day(self):
+    def validate_hours(self):
+        """
+        Ensure that max hours per day does not exceed total max hours.
+        """
         max_hours = self.max_hours_spin.value()
         if self.max_hours_per_day_spin.value() > max_hours:
             self.max_hours_per_day_spin.setValue(max_hours)
 
     def on_generate_schedule(self):
+        """
+        Generate the schedule and update the schedule matrix.
+        """
         if not self.participants or not self.poll_dates:
             QMessageBox.warning(self, "Brak danych", "Nie ma załadowanych uczestników/daty.")
             return
 
-        num_required = self.num_required_spin.value()
-        min_required = self.min_required_spin.value()
-        max_hours = float(self.max_hours_spin.value())
-        max_hours_per_day = float(self.max_hours_per_day_spin.value())
-
-        if self.engine_name == "Schej":
-            shift_duration = 15
-        else:
-            shift_duration = 30
+        shift_duration = 15 if self.engine_name == "Schej" else 30
 
         self.day_slots_dict, self.full_slots = build_day_slots(
             self.participants,
@@ -254,6 +261,8 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Grafik", "Brak slotów do generowania.")
             return
 
+        solver_time_limit = int(self.settings.value("processing_time", 15))
+        solver_num_threads = int(self.settings.value("max_threads", 4))
         self.generate_button.setEnabled(False)
         self.progress_dialog = QProgressDialog("Liczenie...", None, 0, 0, self)
         self.progress_dialog.setCancelButtonText(None)
@@ -267,10 +276,12 @@ class MainWindow(QMainWindow):
         self.solver_worker = SolverWorker(
             participants=self.participants,
             slot_list=self.full_slots,
-            num_required=num_required,
-            min_required=min_required,
-            max_hours=max_hours,
-            max_hours_per_day=max_hours_per_day
+            num_required=self.num_required_spin.value(),
+            min_required=self.min_required_spin.value(),
+            max_hours=float(self.max_hours_spin.value()),
+            max_hours_per_day=float(self.max_hours_per_day_spin.value()),
+            solver_time_limit=solver_time_limit,
+            solver_num_threads=solver_num_threads
         )
         self.solver_worker.moveToThread(self.solver_thread)
         self.solver_thread.started.connect(self.solver_worker.run)
@@ -281,6 +292,9 @@ class MainWindow(QMainWindow):
         self.solver_thread.start()
 
     def on_solver_finished(self, schedule_data, total_hrs):
+        """
+        Handle the solver result by updating the schedule matrix and summary.
+        """
         self.generate_button.setEnabled(True)
         if hasattr(self, 'progress_dialog') and self.progress_dialog:
             self.progress_dialog.close()
@@ -288,11 +302,7 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Solver", "Nie znaleziono rozwiązania.")
             return
 
-        if self.engine_name == "Schej":
-            shift_duration = 15
-        else:
-            shift_duration = 30
-
+        shift_duration = 15 if self.engine_name == "Schej" else 30
         time_slot_list = self._build_time_slot_list(shift_duration)
         self.schedule_widget.load_schedule_matrix(
             schedule_data=schedule_data,
@@ -303,10 +313,18 @@ class MainWindow(QMainWindow):
         self.update_summary()
 
     def _build_time_slot_list(self, shift_duration):
+        """
+        Build a list of time slots based on full_slots.
+
+        Returns:
+            List of tuples (start_time, end_time).
+        """
         if not self.full_slots:
             return []
+
         def t2m(dt):
             return dt.hour * 60 + dt.minute
+
         all_starts = [slot[0] for slot in self.full_slots]
         all_ends = [slot[1] for slot in self.full_slots]
         start_min = min(t2m(s) for s in all_starts)
@@ -324,20 +342,32 @@ class MainWindow(QMainWindow):
         return slots_list
 
     def update_summary(self):
+        """
+        Update the summary widget with current schedule data.
+        """
         current_data = self.schedule_widget.get_current_schedule_data()
         self.summary_widget.update_summary(self.participants, current_data, float(self.max_hours_spin.value()))
 
-    def on_select_lettuce(self):
-        if self.engine_name == "Lettuce":
+    def on_select_cabbage(self):
+        """
+        Switch engine to Cabbage.
+        """
+        if self.engine_name == "Cabbage":
             return
-        self.engine_name = "Lettuce"
+        self.engine_name = "Cabbage"
 
     def on_select_schej(self):
+        """
+        Switch engine to Schej.
+        """
         if self.engine_name == "Schej":
             return
         self.engine_name = "Schej"
 
     def on_person_selected(self, person_name):
+        """
+        Toggle highlighting for a selected person.
+        """
         if self.current_highlight_person == person_name:
             self.schedule_widget.highlight_availability(person_name, enable=False)
             self.current_highlight_person = None
@@ -348,64 +378,124 @@ class MainWindow(QMainWindow):
             self.current_highlight_person = person_name
 
     def on_go_initial(self):
+        """
+        Open the initial setup dialog and reinitialize the schedule if accepted.
+        """
         self.hide()
         dlg = InitialSetupDialog()
         if dlg.exec() == QDialog.DialogCode.Accepted:
             self.engine_name = dlg.loaded_engine
+            # note: check right button in sidebar
+            if self.engine_name == "Schej":
+                self.sidebar.btn_schej.setChecked(True)
+                self.sidebar.btn_cabbage.setChecked(False)
+            else:
+                self.sidebar.btn_cabbage.setChecked(True)
+                self.sidebar.btn_schej.setChecked(False)
             self.participants = dlg.loaded_participants
             self.poll_dates = dlg.loaded_poll_dates
             self.day_ranges = dlg.loaded_day_ranges
             self.initialize_schedule_table()
+            self.apply_current_theme()
             self.show()
         else:
             self.close()
 
-    def on_show_doc_main(self):
-        reply = QMessageBox.question(
+    def on_settings(self):
+        """
+        Open the settings dialog and apply changes if accepted.
+        """
+        dialog = SettingsDialog(self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            self.apply_current_theme()
+
+    def on_show_doc(self):
+        """
+        Open the GitHub documentation link after confirmation.
+        """
+        msg = QMessageBox.question(
             self,
             "Otwieranie dokumentacji",
-            "Aplikacja otworzy link GitHub. Kontynuować?",
+            "Aplikacja otworzy link GitHub w przeglądarce.\n\nCzy kontynuować?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
-        if reply == QMessageBox.StandardButton.Yes:
+        if msg == QMessageBox.StandardButton.Yes:
             QDesktopServices.openUrl(QUrl("https://github.com/m-walas/harmobot"))
 
-    def on_sidebar_fire_mode(self):
-        new_state = not self.fire_mode
-        self.on_toggle_fire_mode(new_state)
-
-    def on_toggle_fire_mode(self, checked: bool):
-        self.fire_mode = checked
-        if self.fire_mode:
-            self.apply_fire_mode_theme()
-        else:
-            self.apply_light_theme()
-        self.schedule_widget.validate_all_cells()
-
     def on_sidebar_colorize(self):
+        """
+        Toggle colorize mode in the schedule widget.
+        """
         new_state = not self.schedule_widget.colorize_mode
         self.schedule_widget.setColorizeMode(new_state)
 
     def on_toggle_params_panel(self):
+        """
+        Toggle the visibility of the parameter panel.
+        """
         if self.param_frame.isVisible():
             self.param_frame.hide()
         else:
             self.param_frame.show()
 
     def load_from_csv(self):
+        """
+        Load data from a CSV file.
+        """
         load_from_csv(self)
 
     def export_to_csv(self):
+        """
+        Export schedule data to CSV.
+        """
         export_to_csv(self)
 
     def export_to_html(self):
+        """
+        Export schedule data to HTML.
+        """
         export_to_html(self)
 
     def export_to_png(self):
+        """
+        Export schedule data to PNG.
+        """
         export_to_png(self)
 
-    def apply_light_theme(self):
-        self.setStyleSheet(LIGHT_QSS)
+    def apply_current_theme(self):
+        """
+        Load the base stylesheet and corresponding theme file (e.g., light.qss, dark.qss, dracula.qss, 
+        cafe.qss, ocean_light.qss, ocean_dark.qss, high_contrast.qss, firemode.qss),
+        perform placeholder substitutions, and apply the resulting stylesheet.
+        """
+        theme = self.settings.value("theme", "Light")
+        theme_file_name = theme.lower().replace(" ", "_") + ".qss"
+        base_path = resource_path("styles/base.qss")
+        theme_path = resource_path(f"styles/{theme_file_name}")
+        try:
+            with open(base_path, "r", encoding="utf-8") as f:
+                base_style = f.read()
+            with open(theme_path, "r", encoding="utf-8") as f:
+                theme_style = f.read()
+            theme_dict = {}
+            for line in theme_style.splitlines():
+                line = line.strip()
+                if line and not line.startswith("/*") and ":" in line:
+                    parts = line.split(":", 1)
+                    key = parts[0].strip()
+                    value = parts[1].strip().rstrip(";")
+                    theme_dict[key] = value
+            combined_style = base_style
+            for key, value in theme_dict.items():
+                combined_style = combined_style.replace(key, value)
+            arrow_path = get_icon_path("arrow_down").replace("\\", "/")
+            combined_style = combined_style.replace("%ARROW_DOWN%", arrow_path)
+            self.setStyleSheet(combined_style)
+            self.sidebar.update_icons(initial_mode=False)
 
-    def apply_fire_mode_theme(self):
-        self.setStyleSheet(FIRE_QSS)
+            self.basic_chip_bg = theme_dict.get("%CHIP_BACKGROUND%", "#E0E0E0")
+            self.basic_chip_text = theme_dict.get("%CHIP_TEXT%", "#000000")
+
+            self.schedule_widget.validate_all_cells()
+        except Exception as e:
+            print("Error applying theme:", e)

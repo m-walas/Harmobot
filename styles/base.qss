@@ -1,0 +1,215 @@
+/* base.qss - Base stylesheet definitions
+   This file defines the base layout and styling for UI components.
+   All color values are specified as placeholders that will be overridden by theme-specific files.
+*/
+
+/* ---------------- Main Window and Dialogs ---------------- */
+QMainWindow, QDialog, QProgressDialog {
+    background-color: %MAIN_BACKGROUND%;
+    color: %MAIN_TEXT%;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 10pt;
+}
+
+/* ---------------- Splitter ---------------- */
+QSplitter::handle {
+    background-color: %SPLITTER_COLOR%;
+}
+QSplitter::handle:horizontal {
+    width: 2px;
+}
+QSplitter::handle:vertical {
+    height: 2px;
+}
+
+/* ---------------- Sidebar & Footer ---------------- */
+QFrame#CollapsibleSidebar,
+QWidget#FooterWidget {
+    background-color: %SIDEBAR_BACKGROUND%;
+    color: %SIDEBAR_TEXT%;
+}
+
+/* Title in Sidebar */
+QLabel#SidebarAppLabel {
+    font-size: 15px;
+    font-weight: bold;
+    color: %SIDEBAR_TITLE%;
+    padding-left: 6px;
+}
+
+/* Top Menu Button in Sidebar */
+QPushButton#SidebarToggleBtn {
+    background-color: transparent;
+    border: none;
+    padding: 6px;
+}
+QPushButton#SidebarToggleBtn:hover {
+    background-color: %SIDEBAR_TOGGLE_HOVER%;
+}
+
+/* Buttons in Sidebar */
+QPushButton#SidebarButton {
+    background-color: transparent;
+    border: none;
+    text-align: left;
+    padding: 8px;
+    color: %SIDEBAR_BUTTON_COLOR%;
+    font-weight: 500;
+    border-radius: 0px;
+    max-height: 30px;
+    min-height: 30px;
+}
+QPushButton#SidebarButton:hover {
+    background-color: %SIDEBAR_BUTTON_HOVER%;
+}
+QPushButton#SidebarButton:checked {
+    background-color: %SIDEBAR_BUTTON_CHECKED%;
+    border-left: 4px solid %SIDEBAR_BUTTON_CHECKED_BORDER%;
+}
+QPushButton#SidebarButton:disabled {
+    color: %SIDEBAR_BUTTON_DISABLED%;
+}
+
+/* Footer Text */
+QWidget#FooterWidget QLabel {
+    color: %FOOTER_TEXT%;
+}
+
+/* ---------------- General Buttons ---------------- */
+QPushButton {
+    background-color: %BUTTON_BACKGROUND%;
+    color: %BUTTON_TEXT%;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 14px;
+    font-weight: 600;
+}
+QPushButton:hover {
+    background-color: %BUTTON_HOVER%;
+}
+QPushButton:disabled {
+    background-color: %BUTTON_DISABLED_BG%;
+    color: %BUTTON_DISABLED_TEXT%;
+    border-radius: 4px;
+}
+
+QToolButton {
+    background-color: transparent;
+    border: none;
+    border-radius: 0px;
+}
+
+/* ---------------- Table and List ---------------- */
+QAbstractScrollArea {
+    background: %TABLE_SCROLLAREA%;
+}
+QTableWidget {
+    background-color: %TABLE_BACKGROUND%;
+    color: %TABLE_TEXT%;
+    gridline-color: %TABLE_GRIDLINE%;
+}
+QTableCornerButton::section {
+    background-color: %TABLE_CORNERBUTTON%;
+    border: none;
+}
+QHeaderView::section {
+    background-color: %TABLE_HEADER_BACKGROUND%;
+    color: %TABLE_HEADER_TEXT%;
+}
+QListWidget {
+    background-color: %LIST_BACKGROUND%;
+    color: %LIST_TEXT%;
+}
+
+/* ---------------- Labels ---------------- */
+QLabel {
+    color: %LABEL_TEXT%;
+    font-weight: 400;
+}
+
+/* ---------------- Edit Fields and SpinBoxes ---------------- */
+QLineEdit {
+    background-color: %LINEEDIT_BACKGROUND%;
+    color: %LINEEDIT_TEXT%;
+    border: 1px solid %LINEEDIT_BORDER%;
+    border-radius: 3px;
+    padding: 4px;
+    max-width: 80px;
+}
+QSpinBox {
+    background-color: %SPINBOX_BACKGROUND%;
+    color: %SPINBOX_TEXT%;
+    border: 1px solid %SPINBOX_BORDER%;
+    border-radius: 3px;
+    padding: 2px 6px;
+    max-width: 70px;
+}
+QSpinBox::up-button, QSpinBox::down-button {
+    width: 0;
+    height: 0;
+    border: none;
+}
+
+/* ---------------- Settings Dialog ---------------- */
+
+QLabel#ThreadStatusLabel {
+    font-size: 9pt;
+    color: green;
+    font: italic;
+}
+QLabel#ThreadStatusLabel[exceeded="true"] {
+    color: orange;
+    font-weight: bold;
+}
+
+QSpinBox#MaxThreadsSpin[exceeded="false"] {
+    background-color: %SPINBOX_BACKGROUND%;
+    border: 1px solid %SPINBOX_BORDER%;
+    color: %SPINBOX_TEXT%;
+}
+QSpinBox#MaxThreadsSpin[exceeded="true"] {
+    background-color: orange;
+    color: black;
+    border: 1px solid #cc6600;
+}
+
+QDialog#SettingsDialog QComboBox {
+    background-color: %LINEEDIT_BACKGROUND%;
+    color: %LINEEDIT_TEXT%;
+    border: 1px solid %SPINBOX_BORDER%;
+    border-radius: 3px;
+    padding: 2px 4px;
+    min-width: 90px;
+    min-height: 20px;
+    max-height: 20px;
+}
+
+QDialog#SettingsDialog QComboBox QAbstractItemView {
+    background-color: %LINEEDIT_BACKGROUND%;
+    color: %LINEEDIT_TEXT%;
+    selection-background-color: #bcaaa4; 
+    selection-color: %LINEEDIT_TEXT%;
+    border: 1px solid %LINEEDIT_BORDER%;
+}
+
+QDialog#SettingsDialog QComboBox::drop-down {
+    background: none;
+    border-left: 1px solid %LINEEDIT_BORDER%;
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 18px;
+}
+QDialog#SettingsDialog QComboBox::down-arrow {
+    border-image: url("%ARROW_DOWN%") 0 0 0 0 stretch stretch;
+    width: 7px;
+    height: 7px;
+}
+
+QDialog#SettingsDialog QSpinBox {
+    background-color: %LINEEDIT_BACKGROUND%;
+    color: %LINEEDIT_TEXT%;
+    border: 1px solid %SPINBOX_BORDER%;
+    min-width: 90px;
+    min-height: 20px;
+    max-height: 20px;
+}

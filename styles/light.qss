@@ -1,0 +1,61 @@
+/* light.qss - Light theme color definitions for base.qss placeholders */
+
+/* Main Window and Dialogs */
+%MAIN_BACKGROUND%: #F3F3F3;
+%MAIN_TEXT%: #000000;
+
+/* Splitter */
+%SPLITTER_COLOR%: #DDDDDD;
+
+/* Sidebar & Footer */
+%SIDEBAR_BACKGROUND%: #009d4f;
+%SIDEBAR_TEXT%: #000000;
+
+/* Sidebar Title */
+%SIDEBAR_TITLE%: #eef6ed;
+
+/* Sidebar Toggle Button Hover */
+%SIDEBAR_TOGGLE_HOVER%: rgba(0,0,0,0.07);
+
+/* Sidebar Button */
+%SIDEBAR_BUTTON_COLOR%: #eef6ed;
+%SIDEBAR_BUTTON_HOVER%: rgba(0,0,0,0.07);
+%SIDEBAR_BUTTON_CHECKED%: rgba(0,0,0,0.15);
+%SIDEBAR_BUTTON_CHECKED_BORDER%: #eef6ed;
+%SIDEBAR_BUTTON_DISABLED%: #999999;
+
+/* Footer Text */
+%FOOTER_TEXT%: #666666;
+
+/* General Buttons */
+%BUTTON_BACKGROUND%: #009d4f;
+%BUTTON_TEXT%: #eef6ed;
+%BUTTON_HOVER%: rgba(0,130,65,0.99);
+%BUTTON_DISABLED_BG%: #A9A9A9;
+%BUTTON_DISABLED_TEXT%: #FFFFFF;
+
+/* Table and List */
+%TABLE_BACKGROUND%: #FFFFFF;
+%TABLE_TEXT%: #000000;
+%TABLE_GRIDLINE%: #AAAAAA;
+%TABLE_HEADER_BACKGROUND%: #E0E0E0;
+%TABLE_SCROLLAREA%: #FFFFFF;
+%TABLE_CORNERBUTTON%: #E0E0E0;
+%TABLE_HEADER_TEXT%: #000000;
+%LIST_BACKGROUND%: #FFFFFF;
+%LIST_TEXT%: #000000;
+
+/* Labels */
+%LABEL_TEXT%: #000000;
+
+/* Edit Fields and SpinBoxes */
+%LINEEDIT_BACKGROUND%: #FFFFFF;
+%LINEEDIT_TEXT%: #000000;
+%LINEEDIT_BORDER%: #CCCCCC;
+%SPINBOX_BACKGROUND%: #FFFFFF;
+%SPINBOX_TEXT%: #000000;
+%SPINBOX_BORDER%: #CCCCCC;
+
+/* Chips */
+%CHIP_BACKGROUND%: #CCCCCC;
+%CHIP_TEXT%: #000000;

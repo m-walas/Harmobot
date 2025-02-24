@@ -8,22 +8,27 @@ from collections import defaultdict
 import random
 
 from UI.occupant_chip import OccupantChip
-from UI.styles import LIGHT_QSS, FIRE_QSS
 
 class ScheduleMatrixWidget(QTableWidget):
     """
-    Tabela (QTableWidget) z occupant_chipami (OccupantChip) w komórkach.
-    occupant_data[(r,c)] -> list[str].
+    A QTableWidget displaying occupant chips (OccupantChip) in its cells.
+    The occupant_data dict maps (row, col) to a list of occupant names (list[str]).
 
-    colorize_mode = True => losowe kolory occupantów (ignoruje overlimit, outside).
-    colorize_mode = False => normalna walidacja (spoza participants => żółty, overlimit/noOverlap => czerwony,
-                            normal => zależny od motywu).
-    highlight_availability(person) => zielone tło komórki, jeśli overlap z availability.
+    When colorize_mode is True, occupant colors are assigned randomly.
+    When colorize_mode is False, the basic chip colors are taken from the current theme
+    (via main window attributes basic_chip_bg and basic_chip_text) while special states are overridden:
+        - Participants not in the provided list are highlighted in yellow.
+        - If a participant exceeds the max hours or has no availability overlap, highlighted in red.
+        - Otherwise, styling depends on the current theme.
+    The highlight_availability method sets a green (or yellow) background for cells overlapping a person's availability.
     """
 
     scheduleChanged = pyqtSignal()
 
     def __init__(self, parent=None):
+        """
+        Initializes the ScheduleMatrixWidget.
+        """
         super().__init__(parent)
         self.setAcceptDrops(True)
 
@@ -32,26 +37,37 @@ class ScheduleMatrixWidget(QTableWidget):
         self.time_slot_list = []
         self.max_hours = 0.0
 
-        # occupant_data[(row,col)] -> list[str]
         self.occupant_data = {}
 
         self.current_highlight_person = None
 
-        # Mapa occupant -> (bg_hex, text_hex) do colorize
         self.occupant_data_color_map = {}
         self.colorize_mode = False
 
-        # Podstawowe rozmiary wierszy/kolumn
+        # Set default row and column sizes
         self.verticalHeader().setDefaultSectionSize(30)
         self.horizontalHeader().setDefaultSectionSize(110)
-
-        # minimalna szer
         self.horizontalHeader().setMinimumSectionSize(100)
 
     def setMaxHours(self, val):
+        """
+        Sets the maximum allowed hours.
+
+        Args:
+            val: Maximum hours value.
+        """
         self.max_hours = val
 
     def load_schedule_matrix(self, schedule_data, participants, poll_dates, time_slot_list):
+        """
+        Loads the schedule matrix from the provided data.
+
+        Args:
+            schedule_data: List of dictionaries containing shift data.
+            participants: List of participant dictionaries (each must contain a 'name' key).
+            poll_dates: List of date strings.
+            time_slot_list: List of time slot tuples (start, end) as time objects.
+        """
         self.clear()
         self.participants = participants
         self.date_list = sorted(poll_dates)
@@ -98,9 +114,15 @@ class ScheduleMatrixWidget(QTableWidget):
 
     def _set_cell_widget(self, row, col, occupant_list):
         """
-        Tworzy w komórce (row,col) QWidget z occupant_chipami.
+        Creates a QWidget with occupant chips for the cell at (row, col).
+
+        Args:
+            row: Row index.
+            col: Column index.
+            occupant_list: List of occupant names to display.
         """
         cell_widget = QWidget()
+        cell_widget.setObjectName("CellWidget")
         layout = QHBoxLayout(cell_widget)
         layout.setContentsMargins(2, 2, 2, 2)
         layout.setSpacing(2)
@@ -111,12 +133,18 @@ class ScheduleMatrixWidget(QTableWidget):
 
         layout.addStretch()
         self.setCellWidget(row, col, cell_widget)
-
         self._refresh_cell_background(row, col)
 
     def get_current_schedule_data(self):
         """
-        Buduje listę {Shift Start, Shift End, Assigned To} w oparciu o occupant_data.
+        Constructs a list of shift dictionaries from occupant_data.
+        Each dictionary contains:
+            - 'Shift Start': start datetime,
+            - 'Shift End': end datetime,
+            - 'Assigned To': comma-separated occupant names.
+        
+        Returns:
+            List of shift dictionaries.
         """
         data = []
         for c, d_str in enumerate(self.date_list):
@@ -135,6 +163,10 @@ class ScheduleMatrixWidget(QTableWidget):
         return data
 
     def mouseDoubleClickEvent(self, event):
+        """
+        Handles double-click events to edit occupant names in a cell.
+        Opens an input dialog for editing, updates occupant_data, and validates cells.
+        """
         pos = event.position().toPoint()
         row = self.rowAt(pos.y())
         col = self.columnAt(pos.x())
@@ -151,12 +183,6 @@ class ScheduleMatrixWidget(QTableWidget):
         dlg.setTextValue(current_text)
         dlg.setMinimumWidth(400)
 
-        main_window = self.window()
-        if hasattr(main_window, 'fire_mode') and main_window.fire_mode:
-            dlg.setStyleSheet(FIRE_QSS)
-        else:
-            dlg.setStyleSheet(LIGHT_QSS)
-
         if dlg.exec():
             new_text = dlg.textValue()
             names = [n.strip() for n in new_text.split(",") if n.strip()]
@@ -166,10 +192,13 @@ class ScheduleMatrixWidget(QTableWidget):
 
         super().mouseDoubleClickEvent(event)
 
-    # ------------------- highlight_availability -------------------
     def highlight_availability(self, person_name, enable=True):
         """
-        Podświetla tło komórki (zielony) jeśli w overlapie z person_name.
+        Highlights cells with the availability of the specified person.
+        
+        Args:
+            person_name: Name of the person.
+            enable: True to enable highlighting; False to disable.
         """
         if not enable:
             self.current_highlight_person = None
@@ -185,8 +214,13 @@ class ScheduleMatrixWidget(QTableWidget):
                 self._refresh_cell_background(r, c)
         self.viewport().repaint()
 
-    # ------------------- colorize_mode -------------------
     def setColorizeMode(self, enable: bool):
+        """
+        Enables or disables colorize mode.
+        
+        Args:
+            enable: True to enable; False to disable.
+        """
         self.colorize_mode = enable
         if enable:
             self._generate_color_map()
@@ -194,7 +228,7 @@ class ScheduleMatrixWidget(QTableWidget):
 
     def _generate_color_map(self):
         """
-        occupant -> (bg_hex, text_hex) w oparciu o losowe barwy i kontrast.
+        Generates a mapping from occupant names to random background and text colors.
         """
         all_occupants = set()
         for occupant_list in self.occupant_data.values():
@@ -210,17 +244,17 @@ class ScheduleMatrixWidget(QTableWidget):
             text_hex = "#000000" if (r * 0.299 + g * 0.587 + b * 0.114) > 186 else "#FFFFFF"
             self.occupant_data_color_map[nm] = (bg_hex, text_hex)
 
-    # ------------------- _refresh_cell_background (highlight) -------------------
     def _refresh_cell_background(self, row, col):
         """
-        Ustawia tło w komórce, gdy jest highlight_availability włączony
-        (self.current_highlight_person).
+        Refreshes the cell background. If a person is highlighted (current_highlight_person is set),
+        applies a green background for normal availability or yellow for ifNeeded-only overlap.
+        Otherwise, resets the background.
         """
         cell_w = self.cellWidget(row, col)
         if not cell_w:
             return
-        # reset
-        cell_w.setStyleSheet("QWidget { background-color: none; }")
+        # Reset background first
+        cell_w.setStyleSheet("QWidget#CellWidget { background-color: none; }")
 
         if not self.current_highlight_person:
             return
@@ -229,47 +263,44 @@ class ScheduleMatrixWidget(QTableWidget):
         if not person:
             return
 
-        # Slot start/end
         availability = person['availabilities']
+        # info: Use ifNeeded availability if present; default to empty list if not
+        ifneeded = person.get('ifNeeded', [])
         d_str = self.date_list[col]
         y, m, d = map(int, d_str.split('-'))
         t1, t2 = self.time_slot_list[row]
         sdt = datetime(y, m, d, t1.hour, t1.minute, 0)
         edt = datetime(y, m, d, t2.hour, t2.minute, 0)
 
-        # Czy slot jest w ifNeeded?
-        ifneeded_overlap = any(sdt >= ivs and edt <= ive for (ivs, ive) in person['ifNeeded'])
-        # Czy slot jest w normal availability?
-        normal_overlap = any(sdt >= avs and edt <= ave for (avs, ave) in person['availabilities'])
+        # Determine overlaps
+        normal_overlap = any(sdt >= avs and edt <= ave for (avs, ave) in availability)
+        ifneeded_overlap = any(sdt >= ivs and edt <= ive for (ivs, ive) in ifneeded)
 
         if ifneeded_overlap and not normal_overlap:
-            # Tylko w ifNeeded -> "mleczny żółty"
-            cell_w.setStyleSheet("QWidget { background-color: rgba(255,255,153,150); }")
+            cell_w.setStyleSheet("QWidget#CellWidget { background-color: rgba(255,255,153,150); }")
         elif normal_overlap:
-            # Normal availability -> "pastelowy zielony"
-            cell_w.setStyleSheet("QWidget { background-color: rgba(204,255,204,180); }")
+            cell_w.setStyleSheet("QWidget#CellWidget { background-color: rgba(204,255,204,180); }")
 
-    # ------------------- validate_all_cells -------------------
     def validate_all_cells(self):
         """
-        Dla każdego occupant_chip w occupant_data ustala styl:
-            - colorize -> occupant_data_color_map
-            - normal -> (spoza participants => złoty, overlimit/noOverlap => czerwony,
-                        w innym wypadku => zależny od motywu).
+        Validates and applies styles to each occupant chip based on:
+            - Colorize mode (random assignment if enabled),
+            - Missing participant (yellow),
+            - Overlimit or no availability overlap (red),
+            - Otherwise, basic chip colors from the current theme.
         """
         occupant_hours = defaultdict(float)
-
         rows = self.rowCount()
         cols = self.columnCount()
 
-        # Policz łączny czas
+        # Compute total worked hours per occupant
         for c in range(cols):
             d_str = self.date_list[c]
             y, m, d = map(int, d_str.split('-'))
             for r in range(rows):
                 occupant_list = self.occupant_data.get((r, c), [])
                 if occupant_list:
-                    (t1, t2) = self.time_slot_list[r]
+                    t1, t2 = self.time_slot_list[r]
                     sdt = datetime(y, m, d, t1.hour, t1.minute, 0)
                     edt = datetime(y, m, d, t2.hour, t2.minute, 0)
                     dur_hrs = (edt - sdt).total_seconds() / 3600.0
@@ -283,15 +314,11 @@ class ScheduleMatrixWidget(QTableWidget):
                     occupant_over_limit.add(nm)
 
         main_window = self.window()
-        dark_mode = False
-        if hasattr(main_window, 'fire_mode') and main_window.fire_mode:
-            dark_mode = True
-
-        if dark_mode:
-            basic_bg = "#30363D"  # ciemnoszary > firemode
-            basic_text = "#C9D1D9"
+        if hasattr(main_window, 'basic_chip_bg') and hasattr(main_window, 'basic_chip_text'):
+            basic_bg = main_window.basic_chip_bg
+            basic_text = main_window.basic_chip_text
         else:
-            basic_bg = "#E0E0E0"  # jasnoszary > lightmode
+            basic_bg = "#E0E0E0"
             basic_text = "#000000"
 
         for c in range(cols):
@@ -299,7 +326,7 @@ class ScheduleMatrixWidget(QTableWidget):
             y, m, d = map(int, d_str.split('-'))
             for r in range(rows):
                 occupant_list = self.occupant_data.get((r, c), [])
-                (t1, t2) = self.time_slot_list[r]
+                t1, t2 = self.time_slot_list[r]
                 sdt = datetime(y, m, d, t1.hour, t1.minute, 0)
                 edt = datetime(y, m, d, t2.hour, t2.minute, 0)
 
@@ -312,12 +339,11 @@ class ScheduleMatrixWidget(QTableWidget):
                     if not item or not item.widget():
                         continue
                     chip = item.widget()
-                    if not isinstance(chip, OccupantChip):
+                    if not hasattr(chip, "occupant_name"):
                         continue
 
                     nm = chip.occupant_name
 
-                    # (1) Tryb colorize => occupant_data_color_map
                     if self.colorize_mode and nm in self.occupant_data_color_map:
                         bg_hex, text_hex = self.occupant_data_color_map[nm]
                         style_chip = f"""
@@ -333,7 +359,6 @@ class ScheduleMatrixWidget(QTableWidget):
                         chip.setStyleSheet(style_chip)
                         continue
 
-                    # Gdy occupant w ogóle nie jest w occupant_data_color_map lub colorize wyłączony:
                     person = next((p for p in self.participants if p['name'] == nm), None)
                     if not person:
                         style_chip = f"""
@@ -347,7 +372,6 @@ class ScheduleMatrixWidget(QTableWidget):
                             }}
                         """
                     elif nm in occupant_over_limit:
-                        # Overlimit => #FF9999
                         style_chip = f"""
                             QFrame#OccupantChip {{
                                 background-color: #FF9999;
@@ -359,11 +383,9 @@ class ScheduleMatrixWidget(QTableWidget):
                             }}
                         """
                     else:
-                        # Sprawdzamy overlap
                         availability = person['availabilities']
                         overlap = any(sdt >= avs and edt <= ave for (avs, ave) in availability)
                         if not overlap:
-                            # noOverlap => #FF9999
                             style_chip = f"""
                                 QFrame#OccupantChip {{
                                     background-color: #FF9999;
@@ -387,7 +409,6 @@ class ScheduleMatrixWidget(QTableWidget):
                             """
                     chip.setStyleSheet(style_chip)
 
-        # Odśwież highlight (osoba)
         if self.current_highlight_person:
             for r in range(rows):
                 for c in range(cols):
@@ -395,20 +416,28 @@ class ScheduleMatrixWidget(QTableWidget):
 
         self.scheduleChanged.emit()
 
-    # ------------------- DRAG & DROP -------------------
     def dragEnterEvent(self, event):
+        """
+        Accepts drag enter events if text data is present.
+        """
         if event.mimeData().hasText():
             event.acceptProposedAction()
         else:
             super().dragEnterEvent(event)
 
     def dragMoveEvent(self, event):
+        """
+        Accepts drag move events if text data is present.
+        """
         if event.mimeData().hasText():
             event.acceptProposedAction()
         else:
             super().dragMoveEvent(event)
 
     def dropEvent(self, event):
+        """
+        Handles drop events to move an occupant from one cell to another.
+        """
         if not event.mimeData().hasText():
             super().dropEvent(event)
             return
@@ -429,11 +458,9 @@ class ScheduleMatrixWidget(QTableWidget):
             event.ignore()
             return
 
-        # Dodaj occupant_name do nowej komórki
         self.occupant_data[(row, col)].append(occupant_name)
         self._set_cell_widget(row, col, self.occupant_data[(row, col)])
 
-        # Usuń occupant_name ze starej komórki
         if (old_r, old_c) in self.occupant_data:
             if occupant_name in self.occupant_data[(old_r, old_c)]:
                 self.occupant_data[(old_r, old_c)].remove(occupant_name)

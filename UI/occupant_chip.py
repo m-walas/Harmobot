@@ -4,11 +4,20 @@ from PyQt6.QtCore import Qt, QPoint, QMimeData
 
 class OccupantChip(QFrame):
     """
-    Pojedynczy 'chip' w komórce tabeli (dla jednej osoby).
-    Obsługuje drag & drop (QDrag) przy przesuwaniu.
+    Single chip in a table cell (for one person).
+    Supports drag & drop (QDrag) for moving.
     """
 
     def __init__(self, occupant_name, row=None, col=None, parent=None):
+        """
+        Initializes the occupant chip.
+
+        Args:
+            occupant_name: The name of the occupant.
+            row: The source row (optional).
+            col: The source column (optional).
+            parent: The parent widget.
+        """
         super().__init__(parent)
         self.occupant_name = occupant_name
         self.source_row = row

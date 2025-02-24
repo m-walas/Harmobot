@@ -6,10 +6,11 @@ from core.version import __app_version__
 
 class FooterWidget(QWidget):
     """
-    Wspólny widget stopki dla całej aplikacji.
-        - nazwa aplikacji, autor, rok,
-        - numer wersji,
-        - ikonka informująca o dostępnej aktualizacji.
+    Common footer widget for the entire application.
+    Displays:
+        - Application name, author, and year,
+        - Version number,
+        - An icon indicating that an update is available.
     """
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -38,6 +39,9 @@ class FooterWidget(QWidget):
 
     def setUpdateAvailable(self, is_available: bool):
         """
-        Pokazuje lub ukrywa ikonę aktualizacji w zależności od wartości is_available.
+        Shows or hides the update icon based on the value of is_available.
+
+        Args:
+            is_available (bool): If True, the update icon is shown; otherwise, it is hidden.
         """
         self.updateIcon.setVisible(is_available)

@@ -7,19 +7,17 @@ _instance = None
 
 class UpdateChecker(QObject):
     """
-    Klasa odpowiedzialna za sprawdzanie aktualizacji.
-    Singleton – tylko jedna instancja w całej aplikacji.
+    Class responsible for checking for updates.
+    Singleton – only one instance exists for the entire application.
     
-    Sygnały:
-      - updateAvailable(str): gdy jest dostępna nowsza wersja (parametr = numer wersji)
-      - noUpdateAvailable: gdy wersja lokalna jest aktualna
-      - errorOccurred(str): w razie błędu sieci/parsowania
+    Signals:
+        - updateAvailable(str): Emitted when a newer version is available (parameter = version number).
+        - noUpdateAvailable: Emitted when the local version is up-to-date.
+        - errorOccurred(str): Emitted in case of a network or parsing error.
 
-    Atrybuty:
-      - has_update (bool): flaga informująca, czy wykryto dostępną aktualizację;
-        domyślnie False, ustawiana na True, gdy sygnał updateAvailable zostanie wyemitowany.
+    Attributes:
+        - has_update (bool): Flag indicating whether an update is available; initially False, set to True when the updateAvailable signal is emitted.
     """
-
     updateAvailable = pyqtSignal(str)
     noUpdateAvailable = pyqtSignal()
     errorOccurred = pyqtSignal(str)
@@ -34,8 +32,8 @@ class UpdateChecker(QObject):
 
     def check_for_update(self):
         """
-        Inicjuje sprawdzenie aktualizacji poprzez wysłanie żądania HTTP do zdalnego endpointu.
-        Żądanie zostanie wykonane tylko raz na cykl życia aplikacji.
+        Initiates the update check by sending an HTTP request to the remote endpoint.
+        The request is executed only once during the application's lifetime.
         """
         if self._update_checked:
             return
@@ -55,7 +53,6 @@ class UpdateChecker(QObject):
         reply.deleteLater()
 
         try:
-            import json
             json_data = json.loads(data.decode("utf-8"))
             remote_version = json_data.get("version", "")
             local_version = __app_version__.lstrip("vV")
@@ -74,9 +71,8 @@ class UpdateChecker(QObject):
 
 def get_update_checker(parent=None):
     """
-    Zwraca jedyną instancję UpdateChecker (singleton).
-    Jeżeli instancja nie istnieje, tworzy ją (używając podanego parent,
-    ale tylko przy pierwszej inicjalizacji).
+    Returns the sole instance of UpdateChecker (singleton).
+    If an instance does not exist, creates one using the provided parent (only on first initialization).
     """
     global _instance
     if _instance is None:
