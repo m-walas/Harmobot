@@ -1,13 +1,13 @@
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QLineEdit, QPushButton,
-    QMessageBox, QFileDialog
+    QMessageBox
 )
 from PyQt6.QtGui import QMovie, QPixmap, QDesktopServices
 from PyQt6.QtCore import Qt, QUrl, QSettings
 
 from UI.collapsible_sidebar import CollapsibleSidebar
 from UI.footer import FooterWidget
-from UI.settings_dialog import SettingsDialog
+from UI.signals import on_settings, on_show_doc
 
 from core.resources import resource_path, get_icon_path, get_logo_path
 from core.update_checker import get_update_checker
@@ -16,7 +16,6 @@ from core.cabbage_service import fetch_event_data as cabbage_fetch_event_data
 from core.cabbage_service import process_data as cabbage_process_data
 from core.schej_service import fetch_event_data as schej_fetch_event_data
 from core.schej_service import process_data as schej_process_data
-
 
 def parse_cabbage_link(raw_input: str) -> str:
     """
@@ -84,7 +83,6 @@ class InitialSetupDialog(QDialog):
         self.sidebar = CollapsibleSidebar(initial_mode=True)
         self.sidebar.sig_select_cabbage.connect(lambda: self._set_engine("Cabbage", clear_input=True))
         self.sidebar.sig_select_schej.connect(lambda: self._set_engine("Schej", clear_input=True))
-        self.sidebar.sig_load_csv.connect(self.on_load_csv)
         self.sidebar.sig_settings.connect(self.on_settings)
         self.sidebar.sig_documentation.connect(self.on_show_doc)
         top_layout.addWidget(self.sidebar, stretch=0)
@@ -198,11 +196,9 @@ class InitialSetupDialog(QDialog):
 
     def on_settings(self):
         """
-        Open the settings dialog and apply the theme if accepted.
+        Emit the signal from UI/signal.py
         """
-        dialog = SettingsDialog(self)
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            self.apply_current_theme()
+        on_settings(self)
 
     def on_engine_logo_clicked(self, event):
         """
@@ -255,27 +251,11 @@ class InitialSetupDialog(QDialog):
         """
         self.error_label.setText(message)
 
-    def on_load_csv(self):
-        """
-        Open a file dialog to load a CSV file.
-        """
-        filepath, _ = QFileDialog.getOpenFileName(self, "Wczytaj CSV", "", "CSV Files (*.csv)")
-        if not filepath:
-            return
-        QMessageBox.information(self, "CSV", f"Załadowano CSV:\n{filepath}")
-
     def on_show_doc(self):
         """
-        Open the GitHub documentation link after confirmation.
+        Emit the signal from signal.py
         """
-        msg = QMessageBox.question(
-            self,
-            "Otwieranie dokumentacji",
-            "Aplikacja otworzy link GitHub w przeglądarce.\n\nCzy kontynuować?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
-        if msg == QMessageBox.StandardButton.Yes:
-            QDesktopServices.openUrl(QUrl("https://github.com/m-walas/harmobot"))
+        on_show_doc(self)
 
     def on_update_available(self, remote_version: str):
         """

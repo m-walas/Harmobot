@@ -4,17 +4,15 @@ from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QMessageBox,
     QPushButton, QFormLayout, QSpinBox, QDialog, QProgressDialog, QFrame
 )
-from PyQt6.QtCore import Qt, QThread, pyqtSignal, QObject, QUrl, QSettings
-from PyQt6.QtGui import QDesktopServices
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QObject, QSettings
 
 from UI.initial_setup_dialog import InitialSetupDialog
 from UI.schedule_matrix_widget import ScheduleMatrixWidget
 from UI.summary_widget import SummaryListWidget
 from UI.footer import FooterWidget
 from UI.collapsible_sidebar import CollapsibleSidebar
-from UI.settings_dialog import SettingsDialog
+from UI.signals import on_settings, on_show_doc, on_load_from_csv, on_export_to_csv, on_export_to_html, on_export_to_png
 
-from core.export_handlers import load_from_csv, export_to_csv, export_to_html, export_to_png
 from core.scheduler import build_day_slots, assign_shifts
 from core.update_checker import get_update_checker
 from core.resources import resource_path, get_icon_path
@@ -102,10 +100,10 @@ class MainWindow(QMainWindow):
         self.sidebar = CollapsibleSidebar(initial_mode=False)
         self.sidebar.sig_select_cabbage.connect(self.on_select_cabbage)
         self.sidebar.sig_select_schej.connect(self.on_select_schej)
-        self.sidebar.sig_load_csv.connect(self.load_from_csv)
-        self.sidebar.sig_export_csv.connect(self.export_to_csv)
-        self.sidebar.sig_export_html.connect(self.export_to_html)
-        self.sidebar.sig_export_png.connect(self.export_to_png)
+        self.sidebar.sig_load_csv.connect(self.on_load_from_csv)
+        self.sidebar.sig_export_csv.connect(self.on_export_to_csv)
+        self.sidebar.sig_export_html.connect(self.on_export_to_html)
+        self.sidebar.sig_export_png.connect(self.on_export_to_png)
         self.sidebar.sig_colorize.connect(self.on_sidebar_colorize)
         self.sidebar.sig_toggle_params.connect(self.on_toggle_params_panel)
         self.sidebar.sig_settings.connect(self.on_settings)
@@ -133,6 +131,7 @@ class MainWindow(QMainWindow):
 
         self.schedule_widget.scheduleChanged.connect(self.update_summary)
         self.summary_widget.personSelected.connect(self.on_person_selected)
+        self.summary_widget.personAddRequested.connect(self.on_person_add_requested)
         schedule_vlayout.addWidget(splitter)
         top_hlayout.addWidget(schedule_container, stretch=1)
 
@@ -246,7 +245,7 @@ class MainWindow(QMainWindow):
         Generate the schedule and update the schedule matrix.
         """
         if not self.participants or not self.poll_dates:
-            QMessageBox.warning(self, "Brak danych", "Nie ma załadowanych uczestników/daty.")
+            QMessageBox.warning(self, "Brak danych", "Nie ma załadowanych uczestników/dostępności.")
             return
 
         shift_duration = 15 if self.engine_name == "Schej" else 30
@@ -258,7 +257,7 @@ class MainWindow(QMainWindow):
             day_ranges=self.day_ranges
         )
         if not self.full_slots:
-            QMessageBox.information(self, "Grafik", "Brak slotów do generowania.")
+            QMessageBox.information(self, "Grafik", "Brak wczytanej dyspozycji.")
             return
 
         solver_time_limit = int(self.settings.value("processing_time", 15))
@@ -377,6 +376,19 @@ class MainWindow(QMainWindow):
             self.schedule_widget.highlight_availability(person_name, enable=True)
             self.current_highlight_person = person_name
 
+    def on_person_add_requested(self, name: str) -> None:
+        """
+        Slot to handle a new participant addition request.
+        It adds the new person as an external participant (with empty availabilities)
+        and updates the summary widget to display the new participant with 0 worked hours.
+        Args:
+            name (str): The name of the new participant.
+        """
+        new_person = {'name': name, 'availabilities': [], 'ifNeeded': [], 'external': True}
+        if not any(p['name'] == name for p in self.participants):
+            self.participants.append(new_person)
+        self.summary_widget.add_person(name)
+
     def on_go_initial(self):
         """
         Open the initial setup dialog and reinitialize the schedule if accepted.
@@ -403,24 +415,15 @@ class MainWindow(QMainWindow):
 
     def on_settings(self):
         """
-        Open the settings dialog and apply changes if accepted.
+        Emit the signal from signal.py
         """
-        dialog = SettingsDialog(self)
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            self.apply_current_theme()
+        on_settings(self)
 
     def on_show_doc(self):
         """
-        Open the GitHub documentation link after confirmation.
+        Emit the signal from signal.py
         """
-        msg = QMessageBox.question(
-            self,
-            "Otwieranie dokumentacji",
-            "Aplikacja otworzy link GitHub w przeglądarce.\n\nCzy kontynuować?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
-        if msg == QMessageBox.StandardButton.Yes:
-            QDesktopServices.openUrl(QUrl("https://github.com/m-walas/harmobot"))
+        on_show_doc(self)
 
     def on_sidebar_colorize(self):
         """
@@ -438,29 +441,29 @@ class MainWindow(QMainWindow):
         else:
             self.param_frame.show()
 
-    def load_from_csv(self):
+    def on_load_from_csv(self):
         """
-        Load data from a CSV file.
+        Emit the signal from signal.py
         """
-        load_from_csv(self)
+        on_load_from_csv(self)
 
-    def export_to_csv(self):
+    def on_export_to_csv(self):
         """
-        Export schedule data to CSV.
+        Emit the signal from signal.py
         """
-        export_to_csv(self)
+        on_export_to_csv(self)
 
-    def export_to_html(self):
+    def on_export_to_html(self):
         """
-        Export schedule data to HTML.
+        Emit the signal from signal.py
         """
-        export_to_html(self)
+        on_export_to_html(self)
 
-    def export_to_png(self):
+    def on_export_to_png(self):
         """
-        Export schedule data to PNG.
+        Emit the signal from signal.py
         """
-        export_to_png(self)
+        on_export_to_png(self)
 
     def apply_current_theme(self):
         """
@@ -492,6 +495,7 @@ class MainWindow(QMainWindow):
             combined_style = combined_style.replace("%ARROW_DOWN%", arrow_path)
             self.setStyleSheet(combined_style)
             self.sidebar.update_icons(initial_mode=False)
+            self.summary_widget.refresh_plus_button_icon()
 
             self.basic_chip_bg = theme_dict.get("%CHIP_BACKGROUND%", "#E0E0E0")
             self.basic_chip_text = theme_dict.get("%CHIP_TEXT%", "#000000")

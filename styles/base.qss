@@ -121,6 +121,32 @@ QListWidget {
     color: %LIST_TEXT%;
 }
 
+QToolButton#PlusButton { 
+    border: 1px solid %BUTTON_BORDER%;
+    border-radius: 3px; 
+    padding: 2px; 
+}
+QToolButton#PlusButton:hover {
+    background-color: %BUTTON_HOVER%;
+}
+QToolButton#PlusButton:pressed {
+    border: 1px solid %BUTTON_HOVER%;
+}
+
+QLabel#SummaryInstructionsLabel {
+    font-size: 8pt;
+    color: %LABEL_TEXT%;
+    margin-top: 4px;
+    font-style: italic;
+}
+
+QLabel#TrashOverlay {
+    color: red;
+    font-size: 26pt;
+    qproperty-alignment: 'AlignCenter';
+    background: transparent;
+}
+
 /* ---------------- Labels ---------------- */
 QLabel {
     color: %LABEL_TEXT%;

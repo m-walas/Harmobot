@@ -12,30 +12,27 @@ class OccupantChip(QFrame):
         """
         Initializes the occupant chip.
 
-        Args:
-            occupant_name: The name of the occupant.
-            row: The source row (optional).
-            col: The source column (optional).
-            parent: The parent widget.
+            Args:
+            occupant_name (str): The name of the occupant.
+            row (int, optional): The source row.
+            col (int, optional): The source column.
+            parent (QWidget, optional): The parent widget.
         """
         super().__init__(parent)
         self.occupant_name = occupant_name
         self.source_row = row
         self.source_col = col
         self._drag_start_pos = QPoint()
-
         self.setObjectName("OccupantChip")
         self.setStyleSheet("""
-            QFrame#OccupantChip {
-                border-radius: 10px;
-                padding: 3px;
-            }
+        QFrame#OccupantChip {
+            border-radius: 10px;
+            padding: 3px;
+        }
         """)
-
         layout = QHBoxLayout(self)
         layout.setContentsMargins(5, 0, 5, 0)
         layout.setSpacing(0)
-
         self.label = QLabel(occupant_name, self)
         self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.label)
@@ -53,10 +50,28 @@ class OccupantChip(QFrame):
         super().mouseMoveEvent(event)
 
     def _start_drag(self):
+        """
+        Initiates the drag operation.
+        When the drag starts, it tries to find the summary widget from the main window.
+        If found, it immediately shows the trash icon overlay (trash_overlay) to inform the user
+        that dropping the chip on this area will remove it from the schedule.
+        After the drag operation completes, the overlay is hidden.
+        """
+        main_win = self.window()
+        summary = getattr(main_win, "summary_widget", None)
+        if summary:
+            # info: Immediately show the trash icon overlay from summary widget
+            summary.trash_overlay.show()
+            summary.update()
         drag = QDrag(self)
         mime = QMimeData()
-
+        # info: Prepare MIME text as "occupant_name|source_row|source_col"
         data_str = f"{self.occupant_name}|{self.source_row}|{self.source_col}"
         mime.setText(data_str)
         drag.setMimeData(mime)
-        drag.exec(Qt.DropAction.MoveAction)
+        # info: Execute drag using MoveAction
+        result = drag.exec(Qt.DropAction.MoveAction)
+        if summary:
+            # info: After drag completes, hide the trash overlay
+            summary.trash_overlay.hide()
+            summary.update()

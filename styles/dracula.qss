@@ -44,6 +44,7 @@
 %TABLE_HEADER_TEXT%: #f8f8f2;
 %LIST_BACKGROUND%: #44475a;
 %LIST_TEXT%: #f8f8f2;
+%BUTTON_BORDER%: #f8f8f2;
 
 /* Labels */
 %LABEL_TEXT%: #f8f8f2;

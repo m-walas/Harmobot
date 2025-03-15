@@ -7,7 +7,7 @@ from PyQt6.QtCore import (
 )
 from PyQt6.QtGui import QIcon
 
-from core.resources import resource_path, get_icon_path
+from core.resources import get_icon_path
 
 
 class SidebarButton(QPushButton):
@@ -116,12 +116,12 @@ class CollapsibleSidebar(QFrame):
         engine_group.addButton(self.btn_schej)
         self.main_layout.addWidget(self.btn_schej)
 
-        csv_icon = QIcon(get_icon_path("load_csv"))
-        self.btn_load_csv = SidebarButton(icon=csv_icon, text="Wczytaj CSV", checkable=False)
-        self.btn_load_csv.clicked.connect(lambda: self.sig_load_csv.emit())
-        self.main_layout.addWidget(self.btn_load_csv)
-
         if not initial_mode:
+            csv_icon = QIcon(get_icon_path("load_csv"))
+            self.btn_load_csv = SidebarButton(icon=csv_icon, text="Wczytaj CSV", checkable=False)
+            self.btn_load_csv.clicked.connect(lambda: self.sig_load_csv.emit())
+            self.main_layout.addWidget(self.btn_load_csv)
+
             exp_csv_icon = QIcon(get_icon_path("export_csv"))
             self.btn_export_csv = SidebarButton(icon=exp_csv_icon, text="Eksport CSV", checkable=False)
             self.btn_export_csv.clicked.connect(lambda: self.sig_export_csv.emit())
@@ -247,6 +247,7 @@ class CollapsibleSidebar(QFrame):
         current_theme = settings.value("theme", "Light").lower()
         if current_theme in ["light"]:
             if not initial_mode:
+                self.btn_load_csv.setIcon(QIcon(get_icon_path("load_csv", variant="light")))
                 self.btn_export_csv.setIcon(QIcon(get_icon_path("export_csv", variant="light")))
                 self.btn_export_html.setIcon(QIcon(get_icon_path("export_html", variant="light")))
                 self.btn_export_png.setIcon(QIcon(get_icon_path("export_png", variant="light")))
@@ -256,11 +257,11 @@ class CollapsibleSidebar(QFrame):
             self.toggle_btn.setIcon(QIcon(get_icon_path("menu", variant="light")))
             self.btn_cabbage.setIcon(QIcon(get_icon_path("cabbage", variant="light")))
             self.btn_schej.setIcon(QIcon(get_icon_path("schej", variant="light")))
-            self.btn_load_csv.setIcon(QIcon(get_icon_path("load_csv", variant="light")))
             self.btn_settings.setIcon(QIcon(get_icon_path("settings", variant="light")))
             self.btn_doc.setIcon(QIcon(get_icon_path("docs", variant="light")))
         elif current_theme in ["high contrast"]:
             if not initial_mode:
+                self.btn_load_csv.setIcon(QIcon(get_icon_path("load_csv", variant="dark")))
                 self.btn_export_csv.setIcon(QIcon(get_icon_path("export_csv", variant="dark")))
                 self.btn_export_html.setIcon(QIcon(get_icon_path("export_html", variant="dark")))
                 self.btn_export_png.setIcon(QIcon(get_icon_path("export_png", variant="dark")))
@@ -270,11 +271,11 @@ class CollapsibleSidebar(QFrame):
             self.toggle_btn.setIcon(QIcon(get_icon_path("menu", variant="dark")))
             self.btn_cabbage.setIcon(QIcon(get_icon_path("cabbage", variant="dark")))
             self.btn_schej.setIcon(QIcon(get_icon_path("schej", variant="dark")))
-            self.btn_load_csv.setIcon(QIcon(get_icon_path("load_csv", variant="dark")))
             self.btn_settings.setIcon(QIcon(get_icon_path("settings", variant="dark")))
             self.btn_doc.setIcon(QIcon(get_icon_path("docs", variant="dark")))
         else:
             if not initial_mode:
+                self.btn_load_csv.setIcon(QIcon(get_icon_path("load_csv")))
                 self.btn_export_csv.setIcon(QIcon(get_icon_path("export_csv")))
                 self.btn_export_html.setIcon(QIcon(get_icon_path("export_html")))
                 self.btn_export_png.setIcon(QIcon(get_icon_path("export_png")))
@@ -284,6 +285,5 @@ class CollapsibleSidebar(QFrame):
             self.toggle_btn.setIcon(QIcon(get_icon_path("menu")))
             self.btn_cabbage.setIcon(QIcon(get_icon_path("cabbage")))
             self.btn_schej.setIcon(QIcon(get_icon_path("schej")))
-            self.btn_load_csv.setIcon(QIcon(get_icon_path("load_csv")))
             self.btn_settings.setIcon(QIcon(get_icon_path("settings")))
             self.btn_doc.setIcon(QIcon(get_icon_path("docs")))

@@ -2,7 +2,17 @@
 
 Harmobot is a desktop GUI application designed for generating optimal work schedules based on participants’ availability. Built using Python and the OR-Tools CP-SAT solver, Harmobot offers an intuitive interface and a robust scheduling algorithm that adapts to real-world constraints.
 
----
+## Highlights
+
+- 🚀 Advanced CP-SAT algorithm for optimal shift scheduling.
+- ⏱ Rapid local processing for high-quality schedules.
+- 📊 Drag & drop interface for easy schedule adjustments.
+- ➕ Add participants via the plus button or drag them from the summary list.
+- 🗑 Remove assignments by dragging chips to the trash drop area.
+- 🎨 Fully customizable themes (Light, Dark, Dracula, High Contrast).
+- 🔗 Integration with Schej and Cabbagemeet for availability data.
+- 📑 Export schedules as CSV, HTML, or PNG.
+- 🖥️ Supports macOS, Linux, and Windows.
 
 ## Overview
 
@@ -14,8 +24,6 @@ Harmobot is distributed as a standalone desktop application and can be built int
 
 <img src="images/initial_dialog.png" width="700">
 
----
-
 ## Key Features
 
 - **Intelligent Scheduling:**  
@@ -25,13 +33,13 @@ Harmobot is distributed as a standalone desktop application and can be built int
   Seamlessly works with the open-source infrastructures provided by Schej and Cabbagemeet. Users can run their own servers with these projects to legally harness full API functionality for collecting availability data.
 
 - **User-Friendly GUI with Drag and Drop:**  
-  Enjoy an interactive interface that supports drag-and-drop editing. You can double-click any cell to edit occupant names or move “chips” (participants) from one cell to another simply by dragging them. Adjust the generated schedule easily in case of any errors or discrepancies.
+  Enjoy an interactive interface that supports drag-and-drop editing. You can double-click any cell to edit occupant names or move “chips” (participants) from one cell to another simply by dragging them. Also drag a participant from the summary panel onto a slot to add them. Adjust the generated schedule easily in case of any errors or discrepancies.
 
 - **Real-Time Availability Preview:**  
   Click on a participant's name in the summary panel to highlight that participant’s availability across the schedule. This makes it simple to see who is available in each time slot.
 
 - **Manual Editing and Error Correction:**  
-  The schedule highlights cells where designated working hours are exceeded and allows you to manually add participants - even those not originally in the list - to any cell.
+  The schedule highlights cells where designated working hours are exceeded and allows you to manually add participants - even those not originally in the list - to any cell. Remove an assignment by dragging a chip from the schedule into the trash drop area.
 
 - **Color-Coded Participant Chips:**  
   Quickly identify participants with a consistent chip color assigned to each person. This feature is especially useful for rapid recognition and tracking across the schedule.
@@ -51,8 +59,6 @@ Harmobot is distributed as a standalone desktop application and can be built int
 <br>
 <img src="images/main_window.png" width="900">
 
----
-
 ## System Requirements
 
 - **Python:** Version 3.9 or higher
@@ -62,8 +68,6 @@ Harmobot is distributed as a standalone desktop application and can be built int
   • Requests  
   • python-dateutil  
   • (Additional dependencies as listed in the requirements file)
-
----
 
 ## Installation
 
@@ -89,8 +93,6 @@ Harmobot is distributed as a standalone desktop application and can be built int
 > [!NOTE]
 > For users preferring a standalone executable, Harmobot can be bundled into a binary using PyInstaller. Instructions are provided below.
 
----
-
 ## Usage
 
 Upon launching Harmobot, you will be greeted with a user-friendly window where you can:
@@ -105,12 +107,10 @@ Upon launching Harmobot, you will be greeted with a user-friendly window where y
   Run the scheduling algorithm to produce an optimal work schedule. A dedicated Settings dialog lets you tune the solver’s time limit or CPU thread usage.
   
 - **Adjust and Edit the Schedule:**  
-  Utilize drag and drop functionality to manually adjust assignments in case of any errors. The application also provides a real-time availability preview - click on a participant's name to view when they are available - and highlights cells that exceed set working hour limits. You can even add participants manually to any cell by double-clicking if necessary.
+  Utilize drag and drop functionality to manually adjust assignments in case of any errors. The application also provides a real-time availability preview - click on a participant's name to view when they are available - and highlights cells that exceed set working hour limits. You can even add participants manually to any cell by double-clicking if necessary or drag a participant from the summary panel onto a desired shift slot.
   
 - **Export Results:**  
   Save the generated schedule as CSV, HTML, or PNG.
-
----
 
 ## Backend & Algorithm Details
 
@@ -133,8 +133,6 @@ Harmobot’s scheduling engine is powered by a constraint programming model usin
 
 While the algorithm strives to produce an optimal schedule based on the provided constraints, it may not always assign shifts perfectly. That is why Harmobot includes features such as drag and drop editing, real-time availability preview, and manual adjustment options - empowering you to fine-tune the schedule as needed.
 
----
-
 ## Integration
 
 Harmobot is designed to work seamlessly with the open-source infrastructures provided by **Schej** and **Cabbagemeet**. Both projects are available on GitHub:
@@ -147,8 +145,6 @@ These services allow you to set up your own server with the full functionality o
 > [!CAUTION]
 > We do not support or assume responsibility for the use of Schej or Cabbagemeet infrastructures. Harmobot is built on top of these open-source solutions solely as an additional tool to facilitate manual scheduling. Users are encouraged to deploy their own servers if they wish to leverage the full capabilities of these services.
 
----
-
 ## License
 
 Harmobot is released under the **AGPL-3.0** license. See the LICENSE file for more details.
@@ -157,8 +153,6 @@ Harmobot is released under the **AGPL-3.0** license. See the LICENSE file for mo
 
 > [!CAUTION]
 > This program should only be used on environments that you own or have explicit permission to do so. Neither the author, nor other parties involved in the project, will be held liable for any illegal use of this program.
-
----
 
 ## Contribute
 

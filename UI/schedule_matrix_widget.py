@@ -284,10 +284,10 @@ class ScheduleMatrixWidget(QTableWidget):
     def validate_all_cells(self):
         """
         Validates and applies styles to each occupant chip based on:
-            - Colorize mode (random assignment if enabled),
-            - Missing participant (yellow),
-            - Overlimit or no availability overlap (red),
-            - Otherwise, basic chip colors from the current theme.
+        - Colorize mode (if enabled, random colors are used),
+        - Participants added externally are always highlighted in yellow,
+        - Participants from the loaded (internal) list are marked red if they exceed hour limits or if they fall outside their availability,
+        - Otherwise, basic chip colors are taken from the current theme.
         """
         occupant_hours = defaultdict(float)
         rows = self.rowCount()
@@ -360,7 +360,7 @@ class ScheduleMatrixWidget(QTableWidget):
                         continue
 
                     person = next((p for p in self.participants if p['name'] == nm), None)
-                    if not person:
+                    if person is None or person.get("external", False):
                         style_chip = f"""
                             QFrame#OccupantChip {{
                                 background-color: #FFD700;
@@ -383,7 +383,8 @@ class ScheduleMatrixWidget(QTableWidget):
                             }}
                         """
                     else:
-                        availability = person['availabilities']
+                        # info: For internal participants, check availability overlap.
+                        availability = person.get('availabilities', [])
                         overlap = any(sdt >= avs and edt <= ave for (avs, ave) in availability)
                         if not overlap:
                             style_chip = f"""
@@ -447,7 +448,7 @@ class ScheduleMatrixWidget(QTableWidget):
             occupant_name, old_r_str, old_c_str = data_str.split("|")
             old_r = int(old_r_str)
             old_c = int(old_c_str)
-        except:
+        except Exception:
             event.ignore()
             return
 
@@ -457,14 +458,21 @@ class ScheduleMatrixWidget(QTableWidget):
         if row < 0 or col < 0:
             event.ignore()
             return
-
+        # info: check if occupant_name is already in the slot
+        if occupant_name in self.occupant_data.get((row, col), []):
+            # info: if so, ignore the drop
+            event.ignore()
+            return
+        # info: add occupant_name to the new slot
+        if (row, col) not in self.occupant_data:
+            self.occupant_data[(row, col)] = []
         self.occupant_data[(row, col)].append(occupant_name)
         self._set_cell_widget(row, col, self.occupant_data[(row, col)])
 
-        if (old_r, old_c) in self.occupant_data:
+        # info: remove occupant_name from the old slot
+        if old_r != -1 and (old_r, old_c) in self.occupant_data:
             if occupant_name in self.occupant_data[(old_r, old_c)]:
                 self.occupant_data[(old_r, old_c)].remove(occupant_name)
                 self._set_cell_widget(old_r, old_c, self.occupant_data[(old_r, old_c)])
-
         self.validate_all_cells()
         event.acceptProposedAction()
