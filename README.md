@@ -10,13 +10,13 @@ Harmobot is a desktop GUI application designed for generating optimal work sched
 - ➕ Add participants via the plus button or drag them from the summary list.
 - 🗑 Remove assignments by dragging chips to the trash drop area.
 - 🎨 Fully customizable themes (Light, Dark, Dracula, High Contrast).
-- 🔗 Integration with Schej and Cabbagemeet for availability data.
+- 🔗 Integration with Timeful (antecedently known as Schej) and Cabbagemeet for availability data.
 - 📑 Export schedules as CSV, HTML, or PNG.
 - 🖥️ Supports macOS, Linux, and Windows.
 
 ## Overview
 
-Harmobot leverages the services provided by **Schej** and **Cabbagemeet** to retrieve participant availability data. The application builds upon their open-source infrastructure to deliver a powerful scheduling solution.
+Harmobot leverages the services provided by **Timeful** and **Cabbagemeet** to retrieve participant availability data. The application builds upon their open-source infrastructure to deliver a powerful scheduling solution.
 
 Gathering people's availability is simple - choosing a single meeting time that suits everyone is straightforward. However, planning a detailed schedule for a group based on individual time availability can be challenging. The scheduling algorithm, when processing extensive input data (e.g., numerous days and a large number of participants with diverse availabilities), requires significant computational power. Without resource and time limits, finding the optimal solution can be very time-consuming. This challenge was the primary motivation for implementing Harmobot as a desktop application, ensuring heavy computations run locally. While a future web version is not ruled out, the current design maximizes performance for complex scheduling scenarios.
 
@@ -30,7 +30,7 @@ Harmobot is distributed as a standalone desktop application and can be built int
   Utilizes a cost-function based algorithm to assign shifts optimally, taking into account minimum and maximum availability, continuity rewards, gap penalties, and daily coverage bonuses.
 
 - **Dual Integration Support:**  
-  Seamlessly works with the open-source infrastructures provided by Schej and Cabbagemeet. Users can run their own servers with these projects to legally harness full API functionality for collecting availability data.
+  Seamlessly works with the open-source infrastructures provided by Timeful and Cabbagemeet. Users can run their own servers with these projects to legally harness full API functionality for collecting availability data.
 
 - **User-Friendly GUI with Drag and Drop:**  
   Enjoy an interactive interface that supports drag-and-drop editing. You can double-click any cell to edit occupant names or move “chips” (participants) from one cell to another simply by dragging them. Also drag a participant from the summary panel onto a slot to add them. Adjust the generated schedule easily in case of any errors or discrepancies.
@@ -98,7 +98,7 @@ Harmobot is distributed as a standalone desktop application and can be built int
 Upon launching Harmobot, you will be greeted with a user-friendly window where you can:
 
 - **Import Data:**  
-  Input a Schej or Cabbagemeet URL to fetch participant availability.
+  Input a Timeful or Cabbagemeet URL to fetch participant availability.
   
 - **Configure Scheduling Parameters:**  
   Set the number of required participants, minimum requirements, and working hour limits.
@@ -135,15 +135,15 @@ While the algorithm strives to produce an optimal schedule based on the provided
 
 ## Integration
 
-Harmobot is designed to work seamlessly with the open-source infrastructures provided by **Schej** and **Cabbagemeet**. Both projects are available on GitHub:
+Harmobot is designed to work seamlessly with the open-source infrastructures provided by **Timeful** and **Cabbagemeet**. Both projects are available on GitHub:
 
-- [Schej](https://github.com/schej-it/schej.it)
+- [Timeful](https://github.com/schej-it/timeful.app)
 - [Cabbagemeet](https://github.com/maxerenberg/cabbagemeet)
 
 These services allow you to set up your own server with the full functionality of collecting and processing availability data. Harmobot integrates with this architecture, offering an enhanced, local scheduling tool without requiring reliance on external APIs.
 
 > [!CAUTION]
-> We do not support or assume responsibility for the use of Schej or Cabbagemeet infrastructures. Harmobot is built on top of these open-source solutions solely as an additional tool to facilitate manual scheduling. Users are encouraged to deploy their own servers if they wish to leverage the full capabilities of these services.
+> We do not support or assume responsibility for the use of Timeful or Cabbagemeet infrastructures. Harmobot is built on top of these open-source solutions solely as an additional tool to facilitate manual scheduling. Users are encouraged to deploy their own servers if they wish to leverage the full capabilities of these services.
 
 ## License
 

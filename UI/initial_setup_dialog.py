@@ -14,8 +14,8 @@ from core.update_checker import get_update_checker
 from core.version import __app_version__
 from core.cabbage_service import fetch_event_data as cabbage_fetch_event_data
 from core.cabbage_service import process_data as cabbage_process_data
-from core.schej_service import fetch_event_data as schej_fetch_event_data
-from core.schej_service import process_data as schej_process_data
+from core.timeful_service import fetch_event_data as timeful_fetch_event_data
+from core.timeful_service import process_data as timeful_process_data
 
 def parse_cabbage_link(raw_input: str) -> str:
     """
@@ -28,26 +28,26 @@ def parse_cabbage_link(raw_input: str) -> str:
     if not raw_input.lower().startswith("http"):
         raise ValueError("Link musi zaczynać się od http/https.")
     if "/e/" in raw_input:
-        raise ValueError("Wygląda na link do Schej, a aktualnie wybrano Cabbage.")
+        raise ValueError("Wygląda na link do Timeful, a aktualnie wybrano Cabbage.")
     if "/m/" not in raw_input:
         raise ValueError("Wygląda na niepoprawny URL z serwisu cabbage.")
     return raw_input
 
 
-def parse_schej_link(raw_input: str) -> str:
+def parse_timeful_link(raw_input: str) -> str:
     """
-    Parse the Schej event URL.
+    Parse the Timeful event URL.
     
     Raises:
-        ValueError: if the URL is invalid for Schej.
+        ValueError: if the URL is invalid for Timeful.
     """
     raw_input = raw_input.strip()
     if not raw_input.lower().startswith("http"):
         raise ValueError("Link musi zaczynać się od http/https.")
     if "/m/" in raw_input:
-        raise ValueError("Wygląda na link do Cabbage, a aktualnie wybrano Schej.")
+        raise ValueError("Wygląda na link do Cabbage, a aktualnie wybrano Timeful.")
     if "/e/" not in raw_input:
-        raise ValueError("Wygląda na niepoprawny URL z serwisu schej.")
+        raise ValueError("Wygląda na niepoprawny URL z serwisu timeful.")
     return raw_input
 
 
@@ -82,7 +82,7 @@ class InitialSetupDialog(QDialog):
         # Sidebar widget
         self.sidebar = CollapsibleSidebar(initial_mode=True)
         self.sidebar.sig_select_cabbage.connect(lambda: self._set_engine("Cabbage", clear_input=True))
-        self.sidebar.sig_select_schej.connect(lambda: self._set_engine("Schej", clear_input=True))
+        self.sidebar.sig_select_timeful.connect(lambda: self._set_engine("Timeful", clear_input=True))
         self.sidebar.sig_settings.connect(self.on_settings)
         self.sidebar.sig_documentation.connect(self.on_show_doc)
         top_layout.addWidget(self.sidebar, stretch=0)
@@ -171,7 +171,7 @@ class InitialSetupDialog(QDialog):
         Set the current engine and update labels.
         
         Args:
-            engine (str): "Cabbage" or "Schej".
+            engine (str): "Cabbage" or "Timeful".
             clear_input (bool): Clear the URL input if True.
         """
         self.current_engine = engine
@@ -183,10 +183,10 @@ class InitialSetupDialog(QDialog):
                 '<span id=cabbage_1>cabbage</span>'
                 '<span id=cabbage_2>meet</span>'
             )
-        elif engine == "Schej":
-            self.event_id_label.setText("Pełny URL wydarzenia (Schej):")
+        elif engine == "Timeful":
+            self.event_id_label.setText("Pełny URL wydarzenia (Timeful / Schej):")
             self.event_id_edit.setPlaceholderText("https://***/e/*****")
-            fallback_html = '<span id=schej>schej</span>'
+            fallback_html = '<span id=timeful>timeful</span>'
         else:
             return
 
@@ -206,8 +206,8 @@ class InitialSetupDialog(QDialog):
         """
         if self.current_engine == "Cabbage":
             QDesktopServices.openUrl(QUrl("https://cabbagemeet.com"))
-        elif self.current_engine == "Schej":
-            QDesktopServices.openUrl(QUrl("https://schej.it"))
+        elif self.current_engine == "Timeful":
+            QDesktopServices.openUrl(QUrl("https://timeful.app"))
 
     def toggle_fetch_button(self, text: str):
         """
@@ -233,11 +233,11 @@ class InitialSetupDialog(QDialog):
                 participants, dates, day_ranges = cabbage_process_data(json_resp, time_offset_hours=timezone_offset)
                 self.loaded_engine = "Cabbage"
             else:
-                event_url = parse_schej_link(raw_input)
-                json_resp = schej_fetch_event_data(event_url)
-                timezone_offset = int(self.settings.value("timezone_schej", 1))
-                participants, dates, day_ranges = schej_process_data(json_resp, time_offset_hours=timezone_offset)
-                self.loaded_engine = "Schej"
+                event_url = parse_timeful_link(raw_input)
+                json_resp = timeful_fetch_event_data(event_url)
+                timezone_offset = int(self.settings.value("timezone_timeful", 1))
+                participants, dates, day_ranges = timeful_process_data(json_resp, time_offset_hours=timezone_offset)
+                self.loaded_engine = "Timeful"
             self.loaded_participants = participants
             self.loaded_poll_dates = dates
             self.loaded_day_ranges = day_ranges

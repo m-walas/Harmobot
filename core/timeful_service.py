@@ -65,7 +65,7 @@ def fetch_event_data(user_url):
 
 def process_data(json_response, time_offset_hours=0):
     """
-    Process JSON data from a Schej event.
+    Process JSON data from a Timeful event.
 
     Parameters:
         json_response (dict): JSON data containing event and response information.

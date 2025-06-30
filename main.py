@@ -20,12 +20,12 @@ def main():
         main_window.poll_dates = poll_dates
         main_window.day_ranges = day_ranges
 
-        if main_window.engine_name == "Schej":
-            main_window.sidebar.btn_schej.setChecked(True)
+        if main_window.engine_name == "Timeful":
+            main_window.sidebar.btn_timeful.setChecked(True)
             main_window.sidebar.btn_cabbage.setChecked(False)
         else:
             main_window.sidebar.btn_cabbage.setChecked(True)
-            main_window.sidebar.btn_schej.setChecked(False)
+            main_window.sidebar.btn_timeful.setChecked(False)
 
         main_window.initialize_schedule_table()
         main_window.show()

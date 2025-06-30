@@ -121,6 +121,10 @@ QListWidget {
     color: %LIST_TEXT%;
 }
 
+QWidget#CellWidget[blocked="true"] {
+    background-color: %TABLE_BACKGROUND_BLOCKED%;
+}
+
 QToolButton#PlusButton { 
     border: 1px solid %BUTTON_BORDER%;
     border-radius: 3px; 

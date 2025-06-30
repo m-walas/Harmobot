@@ -12,6 +12,7 @@ from UI.summary_widget import SummaryListWidget
 from UI.footer import FooterWidget
 from UI.collapsible_sidebar import CollapsibleSidebar
 from UI.signals import on_settings, on_show_doc, on_load_from_csv, on_export_to_csv, on_export_to_html, on_export_to_png
+from UI.day_selection_widget import DaySelectionWidget
 
 from core.scheduler import build_day_slots, assign_shifts
 from core.update_checker import get_update_checker
@@ -99,7 +100,7 @@ class MainWindow(QMainWindow):
 
         self.sidebar = CollapsibleSidebar(initial_mode=False)
         self.sidebar.sig_select_cabbage.connect(self.on_select_cabbage)
-        self.sidebar.sig_select_schej.connect(self.on_select_schej)
+        self.sidebar.sig_select_timeful.connect(self.on_select_timeful)
         self.sidebar.sig_load_csv.connect(self.on_load_from_csv)
         self.sidebar.sig_export_csv.connect(self.on_export_to_csv)
         self.sidebar.sig_export_html.connect(self.on_export_to_html)
@@ -157,7 +158,7 @@ class MainWindow(QMainWindow):
         """
         Initialize the schedule table using participants and poll dates.
         """
-        shift_duration = 15 if self.engine_name == "Schej" else 30
+        shift_duration = 15 if self.engine_name == "Timeful" else 30
         self.day_slots_dict, self.full_slots = build_day_slots(
             self.participants,
             self.poll_dates,
@@ -248,11 +249,18 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Brak danych", "Nie ma załadowanych uczestników/dostępności.")
             return
 
-        shift_duration = 15 if self.engine_name == "Schej" else 30
+        disabled_dates = [self.schedule_widget.date_list[i] for i in self.schedule_widget.disabled_columns]
+        self.active_poll_dates = [d for d in self.poll_dates if d not in disabled_dates]
+        
+        if not self.active_poll_dates:
+            QMessageBox.warning(self, "Brak dni", "Musisz pozostawić zaznaczony przynajmniej jeden dzień.")
+            return
+
+        shift_duration = 15 if self.engine_name == "Timeful" else 30
 
         self.day_slots_dict, self.full_slots = build_day_slots(
             self.participants,
-            self.poll_dates,
+            self.active_poll_dates,
             shift_duration,
             day_ranges=self.day_ranges
         )
@@ -301,7 +309,7 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Solver", "Nie znaleziono rozwiązania.")
             return
 
-        shift_duration = 15 if self.engine_name == "Schej" else 30
+        shift_duration = 15 if self.engine_name == "Timeful" else 30
         time_slot_list = self._build_time_slot_list(shift_duration)
         self.schedule_widget.load_schedule_matrix(
             schedule_data=schedule_data,
@@ -310,6 +318,7 @@ class MainWindow(QMainWindow):
             time_slot_list=time_slot_list
         )
         self.update_summary()
+        self.schedule_widget.restore_disabled_columns()
 
     def _build_time_slot_list(self, shift_duration):
         """
@@ -355,13 +364,13 @@ class MainWindow(QMainWindow):
             return
         self.engine_name = "Cabbage"
 
-    def on_select_schej(self):
+    def on_select_timeful(self):
         """
-        Switch engine to Schej.
+        Switch engine to Timeful.
         """
-        if self.engine_name == "Schej":
+        if self.engine_name == "Timeful":
             return
-        self.engine_name = "Schej"
+        self.engine_name = "Timeful"
 
     def on_person_selected(self, person_name):
         """
@@ -398,12 +407,12 @@ class MainWindow(QMainWindow):
         if dlg.exec() == QDialog.DialogCode.Accepted:
             self.engine_name = dlg.loaded_engine
             # note: check right button in sidebar
-            if self.engine_name == "Schej":
-                self.sidebar.btn_schej.setChecked(True)
+            if self.engine_name == "Timeful":
+                self.sidebar.btn_timeful.setChecked(True)
                 self.sidebar.btn_cabbage.setChecked(False)
             else:
                 self.sidebar.btn_cabbage.setChecked(True)
-                self.sidebar.btn_schej.setChecked(False)
+                self.sidebar.btn_timeful.setChecked(False)
             self.participants = dlg.loaded_participants
             self.poll_dates = dlg.loaded_poll_dates
             self.day_ranges = dlg.loaded_day_ranges

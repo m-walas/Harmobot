@@ -129,26 +129,26 @@ class SettingsDialog(QDialog):
         layout.addWidget(QLabel("Cabbage TimeZone:"), 4, 0)
         layout.addWidget(cabbageWidget, 4, 1)
 
-        self.timezoneSchejSpin = QSpinBox()
-        self.timezoneSchejSpin.setRange(-12, 14)
-        self.timezoneSchejSpin.setValue(int(self.settings.value("timezone_schej", 1)))
+        self.timezoneTimefulSpin = QSpinBox()
+        self.timezoneTimefulSpin.setRange(-12, 14)
+        self.timezoneTimefulSpin.setValue(int(self.settings.value("timezone_timeful", 1)))
 
-        tzSchejBtn = QToolButton()
-        tzSchejBtn.setIcon(QIcon(get_icon_path("info")))
-        tzSchejBtn.setToolTip(
-            "Przesunięcie strefy czasowej (w godzinach) dla serwisu Schej.\n"
-            "Dodawane do czasów wydarzeń pobranych z Schej."
+        tzTimefulBtn = QToolButton()
+        tzTimefulBtn.setIcon(QIcon(get_icon_path("info")))
+        tzTimefulBtn.setToolTip(
+            "Przesunięcie strefy czasowej (w godzinach) dla serwisu Timeful.\n"
+            "Dodawane do czasów wydarzeń pobranych z Timeful."
         )
 
-        schejWidget = QWidget()
-        schejHLayout = QHBoxLayout(schejWidget)
-        schejHLayout.setContentsMargins(0, 0, 0, 0)
-        schejHLayout.setSpacing(6)
-        schejHLayout.addWidget(self.timezoneSchejSpin)
-        schejHLayout.addWidget(tzSchejBtn)
+        timefulWidget = QWidget()
+        timefulHLayout = QHBoxLayout(timefulWidget)
+        timefulHLayout.setContentsMargins(0, 0, 0, 0)
+        timefulHLayout.setSpacing(6)
+        timefulHLayout.addWidget(self.timezoneTimefulSpin)
+        timefulHLayout.addWidget(tzTimefulBtn)
 
-        layout.addWidget(QLabel("Schej TimeZone:"), 5, 0)
-        layout.addWidget(schejWidget, 5, 1)
+        layout.addWidget(QLabel("Timeful TimeZone:"), 5, 0)
+        layout.addWidget(timefulWidget, 5, 1)
 
         self.buttonBox = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
@@ -192,5 +192,5 @@ class SettingsDialog(QDialog):
         self.settings.setValue("processing_time", self.processingTimeSpin.value())
         self.settings.setValue("max_threads", self.maxThreadsSpin.value())
         self.settings.setValue("timezone_cabbage", self.timezoneCabbageSpin.value())
-        self.settings.setValue("timezone_schej", self.timezoneSchejSpin.value())
+        self.settings.setValue("timezone_timeful", self.timezoneTimefulSpin.value())
         self.accept()

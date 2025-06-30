@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import (
     QTableWidget, QTableWidgetItem, QWidget,
     QHBoxLayout, QInputDialog
 )
-from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtCore import pyqtSignal, Qt
 from datetime import datetime
 from collections import defaultdict
 import random
@@ -30,6 +30,10 @@ class ScheduleMatrixWidget(QTableWidget):
         Initializes the ScheduleMatrixWidget.
         """
         super().__init__(parent)
+        self.disabled_columns = set()
+        self.horizontalHeader().sectionClicked.connect(
+            self._on_header_clicked
+        )
         self.setAcceptDrops(True)
 
         self.participants = []
@@ -48,6 +52,42 @@ class ScheduleMatrixWidget(QTableWidget):
         self.verticalHeader().setDefaultSectionSize(30)
         self.horizontalHeader().setDefaultSectionSize(110)
         self.horizontalHeader().setMinimumSectionSize(100)
+
+    def _on_header_clicked(self, col: int):
+        """
+        Handles clicks on the horizontal header to toggle column check state.
+        Args:
+            col: Column index that was clicked.
+        """
+        item = self.horizontalHeaderItem(col)
+        if item is None:
+            return
+        checked = item.checkState() == Qt.CheckState.Checked
+        new_state = Qt.CheckState.Unchecked if checked else Qt.CheckState.Checked
+        item.setData(Qt.ItemDataRole.CheckStateRole, new_state)
+        self._set_column_enabled(col, new_state == Qt.CheckState.Checked)
+
+    def _set_column_enabled(self, col: int, enable: bool):
+        """
+        Enables or disables a column by updating its check state and cell styles.
+        Args:
+            col: Column index to enable/disable.
+            enable: True to enable the column; False to disable it.
+        """
+        if enable:
+            self.disabled_columns.discard(col)
+        else:
+            self.disabled_columns.add(col)
+
+        for r in range(self.rowCount()):
+            cell_w = self.cellWidget(r, col)
+            if not cell_w:
+                continue
+            cell_w.setProperty("blocked", not enable)
+            cell_w.style().unpolish(cell_w)
+            cell_w.style().polish(cell_w)
+ 
+        self.viewport().repaint()
 
     def setMaxHours(self, val):
         """
@@ -79,7 +119,11 @@ class ScheduleMatrixWidget(QTableWidget):
         self.setColumnCount(cols)
 
         for c, d_str in enumerate(self.date_list):
-            self.setHorizontalHeaderItem(c, QTableWidgetItem(d_str))
+            item = QTableWidgetItem(d_str)
+            flags = item.flags() | Qt.ItemFlag.ItemIsUserCheckable
+            item.setFlags(flags)
+            item.setData(Qt.ItemDataRole.CheckStateRole, Qt.CheckState.Checked)
+            self.setHorizontalHeaderItem(c, item)
 
         for r, (t1, t2) in enumerate(self.time_slot_list):
             label = f"{t1.strftime('%H:%M')} - {t2.strftime('%H:%M')}"
@@ -123,6 +167,7 @@ class ScheduleMatrixWidget(QTableWidget):
         """
         cell_widget = QWidget()
         cell_widget.setObjectName("CellWidget")
+        cell_widget.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         layout = QHBoxLayout(cell_widget)
         layout.setContentsMargins(2, 2, 2, 2)
         layout.setSpacing(2)
@@ -253,8 +298,12 @@ class ScheduleMatrixWidget(QTableWidget):
         cell_w = self.cellWidget(row, col)
         if not cell_w:
             return
-        # Reset background first
-        cell_w.setStyleSheet("QWidget#CellWidget { background-color: none; }")
+        if col in self.disabled_columns:
+            return
+        if cell_w.styleSheet():
+            cell_w.setStyleSheet("")
+            cell_w.style().unpolish(cell_w)
+            cell_w.style().polish(cell_w)
 
         if not self.current_highlight_person:
             return
@@ -422,7 +471,11 @@ class ScheduleMatrixWidget(QTableWidget):
         Accepts drag enter events if text data is present.
         """
         if event.mimeData().hasText():
-            event.acceptProposedAction()
+            col = self.columnAt(event.position().toPoint().x())
+            if col in self.disabled_columns:
+                event.ignore()
+            else:
+                event.acceptProposedAction()
         else:
             super().dragEnterEvent(event)
 
@@ -431,7 +484,11 @@ class ScheduleMatrixWidget(QTableWidget):
         Accepts drag move events if text data is present.
         """
         if event.mimeData().hasText():
-            event.acceptProposedAction()
+            col = self.columnAt(event.position().toPoint().x())
+            if col in self.disabled_columns:
+                event.ignore()
+            else:
+                event.acceptProposedAction()
         else:
             super().dragMoveEvent(event)
 
@@ -458,6 +515,9 @@ class ScheduleMatrixWidget(QTableWidget):
         if row < 0 or col < 0:
             event.ignore()
             return
+        if col in self.disabled_columns:
+            event.ignore()
+            return
         # info: check if occupant_name is already in the slot
         if occupant_name in self.occupant_data.get((row, col), []):
             # info: if so, ignore the drop
@@ -476,3 +536,14 @@ class ScheduleMatrixWidget(QTableWidget):
                 self._set_cell_widget(old_r, old_c, self.occupant_data[(old_r, old_c)])
         self.validate_all_cells()
         event.acceptProposedAction()
+
+    def restore_disabled_columns(self):
+        """
+        Restores the disabled columns to their initial state by unchecking their headers
+        and disabling the columns.
+        """
+        for col in self.disabled_columns:
+            hdr = self.horizontalHeaderItem(col)
+            if hdr:
+                hdr.setData(Qt.ItemDataRole.CheckStateRole, Qt.CheckState.Unchecked)
+            self._set_column_enabled(col, False)

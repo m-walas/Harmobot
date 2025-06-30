@@ -82,7 +82,7 @@ class SummaryListWidget(QWidget):
         self.list_widget.itemClicked.connect(self._on_item_clicked)
 
         self.instructions_label = QLabel(
-            "Kliknij, aby zobaczyć dyspozycję.\nPrzeciągnij z listy, aby dodać do slota.\nUpuść tutaj, aby usunąć z grafiku."
+            "Kliknij osobę, aby zobaczyć dyspozycję.\nPrzeciągnij z listy, aby dodać do slota.\nUpuść tutaj, aby usunąć z grafiku."
         )
         self.instructions_label.setObjectName("SummaryInstructionsLabel")
         main_layout.addWidget(self.instructions_label)

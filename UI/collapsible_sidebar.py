@@ -43,7 +43,7 @@ class CollapsibleSidebar(QFrame):
 
     # Signals for MainWindow / InitialSetup
     sig_select_cabbage = pyqtSignal()
-    sig_select_schej = pyqtSignal()
+    sig_select_timeful = pyqtSignal()
     sig_load_csv = pyqtSignal()
     sig_export_csv = pyqtSignal()
     sig_export_html = pyqtSignal()
@@ -98,7 +98,7 @@ class CollapsibleSidebar(QFrame):
         sep_top.setFrameShadow(QFrame.Shadow.Sunken)
         self.main_layout.addWidget(sep_top)
 
-        # --- Tabs Cabbage / Schej ---
+        # --- Tabs Cabbage / Timeful ---
         engine_group = QButtonGroup(self)
         engine_group.setExclusive(True)
 
@@ -109,12 +109,12 @@ class CollapsibleSidebar(QFrame):
         engine_group.addButton(self.btn_cabbage)
         self.main_layout.addWidget(self.btn_cabbage)
 
-        schej_icon = QIcon(get_icon_path("schej"))
-        self.btn_schej = SidebarButton(icon=schej_icon, text="schej", checkable=True)
-        self.btn_schej.setChecked(False)
-        self.btn_schej.clicked.connect(self._on_schej_clicked)
-        engine_group.addButton(self.btn_schej)
-        self.main_layout.addWidget(self.btn_schej)
+        timeful_icon = QIcon(get_icon_path("timeful"))
+        self.btn_timeful = SidebarButton(icon=timeful_icon, text="timeful / schej", checkable=True)
+        self.btn_timeful.setChecked(False)
+        self.btn_timeful.clicked.connect(self._on_timeful_clicked)
+        engine_group.addButton(self.btn_timeful)
+        self.main_layout.addWidget(self.btn_timeful)
 
         if not initial_mode:
             csv_icon = QIcon(get_icon_path("load_csv"))
@@ -184,14 +184,14 @@ class CollapsibleSidebar(QFrame):
     def _on_cabbage_clicked(self):
         if not self.btn_cabbage.isChecked():
             self.btn_cabbage.setChecked(True)
-        self.btn_schej.setChecked(False)
+        self.btn_timeful.setChecked(False)
         self.sig_select_cabbage.emit()
 
-    def _on_schej_clicked(self):
-        if not self.btn_schej.isChecked():
-            self.btn_schej.setChecked(True)
+    def _on_timeful_clicked(self):
+        if not self.btn_timeful.isChecked():
+            self.btn_timeful.setChecked(True)
         self.btn_cabbage.setChecked(False)
-        self.sig_select_schej.emit()
+        self.sig_select_timeful.emit()
 
     def toggle_sidebar(self):
         """
@@ -220,7 +220,7 @@ class CollapsibleSidebar(QFrame):
 
         self.app_label.setVisible(self._expanded)
         for attr_name in [
-            "btn_cabbage", "btn_schej", "btn_load_csv",
+            "btn_cabbage", "btn_timeful", "btn_load_csv",
             "btn_export_csv", "btn_export_html", "btn_export_png",
             "btn_settings", "btn_colorize", "btn_params",
             "btn_doc", "btn_go_initial"
@@ -236,8 +236,8 @@ class CollapsibleSidebar(QFrame):
     def disable_api_tabs(self, disabled: bool):
         if hasattr(self, "btn_cabbage"):
             self.btn_cabbage.setEnabled(not disabled)
-        if hasattr(self, "btn_schej"):
-            self.btn_schej.setEnabled(not disabled)
+        if hasattr(self, "btn_timeful"):
+            self.btn_timeful.setEnabled(not disabled)
 
     def update_icons(self, initial_mode=False):
         """
@@ -256,7 +256,7 @@ class CollapsibleSidebar(QFrame):
                 self.btn_go_initial.setIcon(QIcon(get_icon_path("back", variant="light")))
             self.toggle_btn.setIcon(QIcon(get_icon_path("menu", variant="light")))
             self.btn_cabbage.setIcon(QIcon(get_icon_path("cabbage", variant="light")))
-            self.btn_schej.setIcon(QIcon(get_icon_path("schej", variant="light")))
+            self.btn_timeful.setIcon(QIcon(get_icon_path("timeful", variant="light")))
             self.btn_settings.setIcon(QIcon(get_icon_path("settings", variant="light")))
             self.btn_doc.setIcon(QIcon(get_icon_path("docs", variant="light")))
         elif current_theme in ["high contrast"]:
@@ -270,7 +270,7 @@ class CollapsibleSidebar(QFrame):
                 self.btn_go_initial.setIcon(QIcon(get_icon_path("back", variant="dark")))
             self.toggle_btn.setIcon(QIcon(get_icon_path("menu", variant="dark")))
             self.btn_cabbage.setIcon(QIcon(get_icon_path("cabbage", variant="dark")))
-            self.btn_schej.setIcon(QIcon(get_icon_path("schej", variant="dark")))
+            self.btn_timeful.setIcon(QIcon(get_icon_path("timeful", variant="dark")))
             self.btn_settings.setIcon(QIcon(get_icon_path("settings", variant="dark")))
             self.btn_doc.setIcon(QIcon(get_icon_path("docs", variant="dark")))
         else:
@@ -284,6 +284,6 @@ class CollapsibleSidebar(QFrame):
                 self.btn_go_initial.setIcon(QIcon(get_icon_path("back")))
             self.toggle_btn.setIcon(QIcon(get_icon_path("menu")))
             self.btn_cabbage.setIcon(QIcon(get_icon_path("cabbage")))
-            self.btn_schej.setIcon(QIcon(get_icon_path("schej")))
+            self.btn_timeful.setIcon(QIcon(get_icon_path("timeful")))
             self.btn_settings.setIcon(QIcon(get_icon_path("settings")))
             self.btn_doc.setIcon(QIcon(get_icon_path("docs")))
