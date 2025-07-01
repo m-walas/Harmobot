@@ -182,7 +182,7 @@ Did you enjoy the project? Feel free to give it a star on GitHub ⭐. Got an int
 - **First Build (No .spec):**
 
 ```bash
-       pyinstaller --name Harmobot --onefile --windowed --icon=assets/icon.icns --add-data "assets:assets" main.py
+       pyinstaller --name Harmobot --onedir --windowed --icon=assets/harmobot_logo.icns --add-data "assets:assets" main.py
 ```
 
 **Additional Info:**
@@ -218,6 +218,7 @@ Ensure that your assets folder is structured as follows to guarantee proper disp
 >           ("assets/harmobot_logo_light.png", "assets"),
 >           ("assets/harmobot_fire.gif", "assets"),
 >           ("assets/harmobot_logo.ico", "assets"),
+>           ("assets/harmobot_logo.icns", "assets"),
 >       ]
 >```
 
