@@ -11,6 +11,7 @@ Harmobot is a desktop GUI application designed for generating optimal work sched
 - 🗑 Remove assignments by dragging chips to the trash drop area.
 - 🎨 Fully customizable themes (Light, Dark, Dracula, High Contrast).
 - 🔗 Integration with Timeful (antecedently known as Schej) and Cabbagemeet for availability data.
+- ✅ Per-day checkboxes to instantly exclude entire days from scheduling.
 - 📑 Export schedules as CSV, HTML, or PNG.
 - 🖥️ Supports macOS, Linux, and Windows.
 
@@ -34,6 +35,9 @@ Harmobot is distributed as a standalone desktop application and can be built int
 
 - **User-Friendly GUI with Drag and Drop:**  
   Enjoy an interactive interface that supports drag-and-drop editing. You can double-click any cell to edit occupant names or move “chips” (participants) from one cell to another simply by dragging them. Also drag a participant from the summary panel onto a slot to add them. Adjust the generated schedule easily in case of any errors or discrepancies.
+
+- **Day toggles:**
+  Click on the checkbox in any date column header to disable or re-enable that entire day and user availability. Solver ignores disabled columns.
 
 - **Real-Time Availability Preview:**  
   Click on a participant's name in the summary panel to highlight that participant’s availability across the schedule. This makes it simple to see who is available in each time slot.
@@ -137,7 +141,7 @@ While the algorithm strives to produce an optimal schedule based on the provided
 
 Harmobot is designed to work seamlessly with the open-source infrastructures provided by **Timeful** and **Cabbagemeet**. Both projects are available on GitHub:
 
-- [Timeful](https://github.com/schej-it/timeful.app)
+- [Timeful](https://github.com/schej-it/timeful.app) (formerly Schej)
 - [Cabbagemeet](https://github.com/maxerenberg/cabbagemeet)
 
 These services allow you to set up your own server with the full functionality of collecting and processing availability data. Harmobot integrates with this architecture, offering an enhanced, local scheduling tool without requiring reliance on external APIs.
